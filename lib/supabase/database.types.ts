@@ -11,10 +11,12 @@ export type ReaderFeedbackRow = {
   today_action: string;
   evening_score: number;
   improvement_rate: number;
-  learning: string;
+  today_reflection: string;
+  today_learning: string;
   message_to_author: string;
   recommend_score: number;
   created_at: string;
+  learning?: string;
 };
 
 export type ReaderFeedbackInsert = {
@@ -29,7 +31,8 @@ export type ReaderFeedbackInsert = {
   today_action: string;
   evening_score: number;
   improvement_rate: number;
-  learning: string;
+  today_reflection: string;
+  today_learning: string;
   message_to_author: string;
   recommend_score: number;
 };

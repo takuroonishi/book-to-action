@@ -37,7 +37,8 @@ export type ReaderFeedback = {
   todayAction: string;
   eveningScore: number;
   improvementRate: number;
-  learning: string;
+  todayReflection: string;
+  todayLearning: string;
   messageToAuthor: string;
   recommendScore: number;
   createdAt: string;
@@ -65,7 +66,8 @@ function mapRow(row: ReaderFeedbackRow): ReaderFeedback {
     todayAction: row.today_action,
     eveningScore: row.evening_score,
     improvementRate: Number(row.improvement_rate),
-    learning: row.learning,
+    todayReflection: row.today_reflection ?? "",
+    todayLearning: row.today_learning ?? row.learning ?? "",
     messageToAuthor: row.message_to_author,
     recommendScore: row.recommend_score ?? 0,
     createdAt: row.created_at,
@@ -85,7 +87,8 @@ function toInsert(input: ReaderFeedbackInput): ReaderFeedbackInsert {
     today_action: input.todayAction,
     evening_score: input.eveningScore,
     improvement_rate: input.improvementRate,
-    learning: input.learning,
+    today_reflection: input.todayReflection,
+    today_learning: input.todayLearning,
     message_to_author: input.messageToAuthor,
     recommend_score: input.recommendScore,
   };

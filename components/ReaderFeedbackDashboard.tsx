@@ -155,23 +155,29 @@ export function ReaderFeedbackDashboard({
             </div>
 
             <div className="space-y-4 px-5 py-5 text-sm">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-xs text-[#86868b]">年代</p>
-                  <p className="mt-1 font-medium text-[#1d1d1f]">
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-xl bg-[#f5f5f7] px-2 py-2">
+                  <p className="text-[10px] text-[#86868b]">年代</p>
+                  <p className="mt-1 font-semibold text-[#1d1d1f]">
                     {item.ageGroup}
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs text-[#86868b]">性別</p>
-                  <p className="mt-1 font-medium text-[#1d1d1f]">
+                <div className="rounded-xl bg-[#f5f5f7] px-2 py-2">
+                  <p className="text-[10px] text-[#86868b]">性別</p>
+                  <p className="mt-1 font-semibold text-[#1d1d1f]">
                     {item.gender}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-[#f5f5f7] px-2 py-2">
+                  <p className="text-[10px] text-[#86868b]">おすすめ度</p>
+                  <p className="mt-1 font-semibold text-[#1d1d1f]">
+                    {item.recommendScore}
                   </p>
                 </div>
               </div>
 
               <div>
-                <p className="text-xs text-[#86868b]">本のタイトル</p>
+                <p className="text-xs text-[#86868b]">本</p>
                 <p
                   className="mt-1 truncate font-medium text-[#1d1d1f]"
                   title={item.bookTitle}
@@ -189,14 +195,14 @@ export function ReaderFeedbackDashboard({
 
               {item.messageToAuthor ? (
                 <div>
-                  <p className="text-xs text-[#86868b]">著者に伝えたいこと</p>
+                  <p className="text-xs text-[#86868b]">著者へのメッセージ</p>
                   <p className="mt-2 leading-relaxed text-[#1d1d1f]">
                     {item.messageToAuthor}
                   </p>
                 </div>
               ) : (
                 <p className="text-xs text-[#86868b]">
-                  著者に伝えたいこと：未記入
+                  著者へのメッセージ：未記入
                 </p>
               )}
             </div>

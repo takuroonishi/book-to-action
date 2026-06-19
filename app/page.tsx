@@ -23,15 +23,15 @@ import {
   loadDailyRecords,
   type DailyRecord,
 } from "@/lib/daily-records";
+import { insertReaderFeedback } from "@/lib/reader-feedback";
 import {
-  insertReaderFeedback,
-  AGE_GROUP_OPTIONS,
-  GENDER_OPTIONS,
-  type AgeGroup,
-  type Gender,
-} from "@/lib/reader-feedback";
+  loadReaderProfile,
+  saveReaderProfile,
+  type ReaderProfile,
+} from "@/lib/reader-profile";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { ReaderFeedbackDashboard } from "@/components/ReaderFeedbackDashboard";
+import { ReaderProfileSection } from "@/components/ReaderProfileSection";
 
 function getTodayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -430,11 +430,11 @@ export default function Home() {
   const [morningScore, setMorningScore] = useState(8);
   const [eveningScore, setEveningScore] = useState(5);
   const [result, setResult] = useState<ThoughtResult | null>(null);
-  const [learning, setLearning] = useState("");
+  const [todayReflection, setTodayReflection] = useState("");
+  const [todayLearning, setTodayLearning] = useState("");
   const [messageToAuthor, setMessageToAuthor] = useState("");
-  const [recommendScore, setRecommendScore] = useState(7);
-  const [ageGroup, setAgeGroup] = useState<AgeGroup>("回答しない");
-  const [gender, setGender] = useState<Gender>("回答しない");
+  const [readerProfile, setReaderProfile] = useState<ReaderProfile | null>(null);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [agreedToFeedbackUse, setAgreedToFeedbackUse] = useState(false);
   const [error, setError] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
@@ -457,13 +457,29 @@ export default function Home() {
 
   useEffect(() => {
     const loadedCustomBooks = loadCustomBooks();
+    const loadedProfile = loadReaderProfile();
     setCustomBooks(loadedCustomBooks);
     setRecords(loadDailyRecords());
     setSelectedBookId(loadSelectedBookId(loadedCustomBooks));
+    setReaderProfile(loadedProfile);
+    setIsEditingProfile(!loadedProfile);
   }, [todayKey]);
+
+  function handleSaveProfile(profile: ReaderProfile) {
+    saveReaderProfile(profile);
+    setReaderProfile(profile);
+    setIsEditingProfile(false);
+  }
 
   function handleConvert(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (!readerProfile) {
+      setError("先に読者情報を保存してください。");
+      setIsEditingProfile(true);
+      setResult(null);
+      return;
+    }
 
     if (!worry.trim()) {
       setError("今日の悩みを入力してください。");
@@ -474,9 +490,9 @@ export default function Home() {
     setError("");
     setResult(generateThoughtResult(selectedBookId, worry, customBooks));
     setEveningScore(5);
-    setLearning("");
+    setTodayReflection("");
+    setTodayLearning("");
     setMessageToAuthor("");
-    setRecommendScore(7);
     setAgreedToFeedbackUse(false);
     setSaveMessage("");
     setSaveError("");
@@ -485,9 +501,9 @@ export default function Home() {
   function handleEdit() {
     setResult(null);
     setEveningScore(5);
-    setLearning("");
+    setTodayReflection("");
+    setTodayLearning("");
     setMessageToAuthor("");
-    setRecommendScore(7);
     setAgreedToFeedbackUse(false);
     setSaveMessage("");
     setSaveError("");
@@ -499,10 +515,12 @@ export default function Home() {
     setWorry("");
     setMorningScore(8);
     setEveningScore(5);
-    setLearning("");
+    setTodayReflection("");
+    setTodayLearning("");
     setMessageToAuthor("");
-    setRecommendScore(7);
     setAgreedToFeedbackUse(false);
+    setSaveMessage("");
+    setSaveError("");
     setError("");
   }
 
@@ -511,9 +529,22 @@ export default function Home() {
       return;
     }
 
-    if (!learning.trim()) {
+    if (!readerProfile) {
+      setSaveMessage("");
+      setSaveError("先に読者情報を保存してください。");
+      setIsEditingProfile(true);
+      return;
+    }
+
+    if (!todayReflection.trim()) {
       setSaveError("");
-      setSaveMessage("今日の学びを入力してください。");
+      setSaveMessage("振り返りを入力してください。");
+      return;
+    }
+
+    if (!todayLearning.trim()) {
+      setSaveError("");
+      setSaveMessage("学びを入力してください。");
       return;
     }
 
@@ -539,8 +570,9 @@ export default function Home() {
 
     try {
       await insertReaderFeedback({
-        ageGroup,
-        gender,
+        ageGroup: readerProfile.ageGroup,
+        gender: readerProfile.gender,
+        recommendScore: readerProfile.recommendScore,
         bookId: activeBook.id,
         bookTitle: activeBook.title,
         bookAuthor: activeBook.author,
@@ -550,9 +582,9 @@ export default function Home() {
         todayAction: result.todayAction,
         eveningScore,
         improvementRate,
-        learning: learning.trim(),
+        todayReflection: todayReflection.trim(),
+        todayLearning: todayLearning.trim(),
         messageToAuthor: messageToAuthor.trim(),
-        recommendScore,
       });
 
       const record = appendDailyRecord({
@@ -568,7 +600,7 @@ export default function Home() {
         morningScore,
         eveningScore,
         improvementRate,
-        learning: learning.trim(),
+        learning: todayLearning.trim(),
       });
 
       setRecords([record, ...records]);
@@ -578,9 +610,9 @@ export default function Home() {
       setMorningScore(8);
       setEveningScore(5);
       setResult(null);
-      setLearning("");
+      setTodayReflection("");
+      setTodayLearning("");
       setMessageToAuthor("");
-      setRecommendScore(7);
       setAgreedToFeedbackUse(false);
     } catch (err) {
       setSaveMessage("");
@@ -654,6 +686,29 @@ export default function Home() {
           />
         ) : (
           <>
+            <ReaderProfileSection
+              profile={readerProfile}
+              isEditing={isEditingProfile}
+              onEdit={() => setIsEditingProfile(true)}
+              onCancelEdit={() => setIsEditingProfile(false)}
+              onSave={handleSaveProfile}
+            />
+
+            {!readerProfile ? (
+              <p className="mt-6 rounded-2xl bg-[#f5f5f7] px-4 py-4 text-sm leading-relaxed text-[#86868b]">
+                STEP 1 · 読者情報を保存すると、毎日の記録を始められます。
+              </p>
+            ) : (
+              <p className="mt-6 text-sm text-[#86868b]">
+                STEP 2 · 毎日の悩みと行動を記録
+              </p>
+            )}
+
+            <div
+              className={`mt-6 space-y-6 ${
+                !readerProfile ? "pointer-events-none opacity-40" : ""
+              }`}
+            >
             {!result ? (
               <BookSelector
                 books={allBooks}
@@ -663,48 +718,10 @@ export default function Home() {
             ) : null}
 
             {!result ? (
-              <form onSubmit={handleConvert} className="mt-10 space-y-6">
+              <form onSubmit={handleConvert} className="space-y-6">
                 <p className="text-xs font-medium tracking-widest text-[#86868b]">
                   朝
                 </p>
-
-                <label htmlFor="age-group" className="block space-y-3">
-                  <span className="text-sm font-medium text-[#1d1d1f]">年代</span>
-                  <select
-                    id="age-group"
-                    name="ageGroup"
-                    value={ageGroup}
-                    onChange={(event) =>
-                      setAgeGroup(event.target.value as AgeGroup)
-                    }
-                    className={selectClassName}
-                  >
-                    {AGE_GROUP_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label htmlFor="gender" className="block space-y-3">
-                  <span className="text-sm font-medium text-[#1d1d1f]">性別</span>
-                  <select
-                    id="gender"
-                    name="gender"
-                    value={gender}
-                    onChange={(event) =>
-                      setGender(event.target.value as Gender)
-                    }
-                    className={selectClassName}
-                  >
-                    {GENDER_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
 
                 <label htmlFor="worry" className="block space-y-3">
                   <span className="text-sm font-medium text-[#1d1d1f]">
@@ -832,16 +849,32 @@ export default function Home() {
                     onChange={setEveningScore}
                   />
 
-                  <label htmlFor="learning" className="block space-y-3">
+                  <label htmlFor="today-reflection" className="block space-y-3">
                     <span className="text-sm font-medium text-[#1d1d1f]">
-                      今日の学び
+                      振り返り
                     </span>
                     <textarea
-                      id="learning"
+                      id="today-reflection"
                       rows={4}
-                      value={learning}
-                      onChange={(event) => setLearning(event.target.value)}
-                      placeholder="例：相手の反応より、自分の行動に集中できる"
+                      value={todayReflection}
+                      onChange={(event) =>
+                        setTodayReflection(event.target.value)
+                      }
+                      placeholder="例：今日は相手の反応より、自分の行動に集中できた"
+                      className={textareaClassName}
+                    />
+                  </label>
+
+                  <label htmlFor="today-learning" className="block space-y-3">
+                    <span className="text-sm font-medium text-[#1d1d1f]">
+                      学び
+                    </span>
+                    <textarea
+                      id="today-learning"
+                      rows={4}
+                      value={todayLearning}
+                      onChange={(event) => setTodayLearning(event.target.value)}
+                      placeholder="例：課題の分離を意識すると、気持ちが楽になる"
                       className={textareaClassName}
                     />
                   </label>
@@ -861,17 +894,6 @@ export default function Home() {
                       className={textareaClassName}
                     />
                   </label>
-
-                  <ScoreSlider
-                    id="recommend-score"
-                    label="この本を友人に勧めたいですか？"
-                    value={recommendScore}
-                    onChange={setRecommendScore}
-                    min={0}
-                    max={10}
-                    hintLeft="0 勧めない"
-                    hintRight="10 ぜひ勧めたい"
-                  />
 
                   <p className="text-xs leading-relaxed text-[#86868b]">
                     {feedbackNoticeText}
@@ -924,6 +946,7 @@ export default function Home() {
             ) : null}
 
             <HistoryList records={records} />
+            </div>
 
             <footer className="mt-20 text-center">
               <p className="text-sm leading-loose text-[#86868b]">

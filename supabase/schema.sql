@@ -14,7 +14,8 @@ create table if not exists public.reader_feedback (
   today_action text not null,
   evening_score integer not null check (evening_score between 1 and 10),
   improvement_rate numeric(5, 1) not null default 0,
-  learning text not null,
+  today_reflection text not null default '',
+  today_learning text not null default '',
   message_to_author text not null default '',
   recommend_score integer not null default 0 check (recommend_score between 0 and 10),
   created_at timestamptz not null default now()
@@ -28,8 +29,6 @@ create index if not exists reader_feedback_book_title_idx
 
 alter table public.reader_feedback enable row level security;
 
--- Demo policies: open read/write for anon.
--- Replace SELECT policy with admin-only auth when login is added.
 drop policy if exists "reader_feedback_insert_anon" on public.reader_feedback;
 create policy "reader_feedback_insert_anon"
   on public.reader_feedback
@@ -44,5 +43,4 @@ create policy "reader_feedback_select_anon"
   to anon, authenticated
   using (true);
 
--- Realtime
 alter publication supabase_realtime add table public.reader_feedback;
