@@ -1,4 +1,8 @@
-import { formatImprovementRate } from "@/lib/daily-records";
+import {
+  calculateImprovementDelta,
+  formatImprovementDelta,
+  formatImprovementRate,
+} from "@/lib/daily-records";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import type {
   ReaderFeedbackInsert,
@@ -35,10 +39,17 @@ export type ReaderFeedback = {
   improvementRate: number;
   learning: string;
   messageToAuthor: string;
+  recommendScore: number;
   createdAt: string;
 };
 
 export type ReaderFeedbackInput = Omit<ReaderFeedback, "id" | "createdAt">;
+
+export type FeedbackStats = {
+  totalCount: number;
+  averageImprovementDelta: number;
+  averageRecommendScore: number;
+};
 
 function mapRow(row: ReaderFeedbackRow): ReaderFeedback {
   return {
@@ -56,6 +67,7 @@ function mapRow(row: ReaderFeedbackRow): ReaderFeedback {
     improvementRate: Number(row.improvement_rate),
     learning: row.learning,
     messageToAuthor: row.message_to_author,
+    recommendScore: row.recommend_score ?? 0,
     createdAt: row.created_at,
   };
 }
@@ -75,7 +87,46 @@ function toInsert(input: ReaderFeedbackInput): ReaderFeedbackInsert {
     improvement_rate: input.improvementRate,
     learning: input.learning,
     message_to_author: input.messageToAuthor,
+    recommend_score: input.recommendScore,
   };
+}
+
+export function computeFeedbackStats(items: ReaderFeedback[]): FeedbackStats {
+  if (items.length === 0) {
+    return {
+      totalCount: 0,
+      averageImprovementDelta: 0,
+      averageRecommendScore: 0,
+    };
+  }
+
+  const totalCount = items.length;
+  const averageImprovementDelta =
+    items.reduce(
+      (sum, item) =>
+        sum + calculateImprovementDelta(item.morningScore, item.eveningScore),
+      0,
+    ) / totalCount;
+  const averageRecommendScore =
+    items.reduce((sum, item) => sum + item.recommendScore, 0) / totalCount;
+
+  return {
+    totalCount,
+    averageImprovementDelta,
+    averageRecommendScore,
+  };
+}
+
+export function getItemImprovementDelta(item: ReaderFeedback) {
+  return calculateImprovementDelta(item.morningScore, item.eveningScore);
+}
+
+export function formatAverageRecommendScore(score: number) {
+  return score.toFixed(1);
+}
+
+export function formatRecommendScore(score: number) {
+  return score.toFixed(1);
 }
 
 export function formatFeedbackDate(isoDate: string) {
@@ -159,4 +210,4 @@ export function subscribeReaderFeedback(
   };
 }
 
-export { formatImprovementRate };
+export { formatImprovementDelta, formatImprovementRate };

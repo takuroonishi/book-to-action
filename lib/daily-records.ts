@@ -32,8 +32,21 @@ export function calculateImprovementRate(
   return Math.max(0, Math.round(rate * 10) / 10);
 }
 
+export function calculateImprovementDelta(
+  morningScore: number,
+  eveningScore: number,
+): number {
+  const delta = morningScore - eveningScore;
+  return Math.round(delta * 10) / 10;
+}
+
 export function formatImprovementRate(rate: number) {
   return Number.isInteger(rate) ? `${rate}%` : `${rate.toFixed(1)}%`;
+}
+
+export function formatImprovementDelta(delta: number) {
+  const sign = delta > 0 ? "+" : delta < 0 ? "" : "+";
+  return `${sign}${delta.toFixed(1)}`;
 }
 
 export function loadDailyRecords(): DailyRecord[] {

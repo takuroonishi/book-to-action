@@ -16,6 +16,7 @@ create table if not exists public.reader_feedback (
   improvement_rate numeric(5, 1) not null default 0,
   learning text not null,
   message_to_author text not null default '',
+  recommend_score integer not null default 0 check (recommend_score between 0 and 10),
   created_at timestamptz not null default now()
 );
 

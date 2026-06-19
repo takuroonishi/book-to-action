@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "BOOK TO ACTION",
   description:
-    "読んだ本を、今日の行動へ。毎日の悩み・行動・振り返りを記録する読後アプリ。",
+    "著者の思想が読者の行動に変わった瞬間を記録する、行動変容の可視化アプリ。",
 };
 
 export default function RootLayout({

@@ -13,6 +13,7 @@ export type ReaderFeedbackRow = {
   improvement_rate: number;
   learning: string;
   message_to_author: string;
+  recommend_score: number;
   created_at: string;
 };
 
@@ -30,6 +31,7 @@ export type ReaderFeedbackInsert = {
   improvement_rate: number;
   learning: string;
   message_to_author: string;
+  recommend_score: number;
 };
 
 export type Database = {

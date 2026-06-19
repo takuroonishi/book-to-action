@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { isAdminAuthenticated } from "@/lib/admin/session";
 import {
+  computeFeedbackStats,
   fetchReaderFeedback,
-  formatFeedbackDate,
-  formatImprovementRate,
+  formatAverageRecommendScore,
+  formatImprovementDelta,
+  getItemImprovementDelta,
   subscribeReaderFeedback,
   type ReaderFeedback,
 } from "@/lib/reader-feedback";
@@ -22,6 +24,8 @@ export function ReaderFeedbackDashboard({
   const [selectedBook, setSelectedBook] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const stats = useMemo(() => computeFeedbackStats(items), [items]);
 
   const filterOptions = useMemo(() => {
     const titles = new Set(bookTitles);
@@ -79,15 +83,31 @@ export function ReaderFeedbackDashboard({
   }, [loadFeedback]);
 
   return (
-    <section className="space-y-4 border-t border-[#e8e8ed] pt-6">
-      <div className="flex items-end justify-between gap-3">
-        <div>
-          <p className="text-sm font-medium text-[#1d1d1f]">読者の声</p>
-          <p className="mt-1 text-xs text-[#86868b]">
-            Supabaseにリアルタイム反映
-          </p>
-        </div>
-        <span className="text-xs text-[#86868b]">{items.length}件</span>
+    <section className="space-y-5">
+      <div>
+        <p className="text-sm font-medium text-[#1d1d1f]">読者の行動変容</p>
+        <p className="mt-1 text-xs leading-relaxed text-[#86868b]">
+          著者の思想が、読者の行動に変わった瞬間を記録します。
+        </p>
+      </div>
+
+      <div className="space-y-2 rounded-2xl bg-white px-5 py-4 ring-1 ring-[#f2f2f7]">
+        <p className="text-sm text-[#1d1d1f]">
+          総投稿数：
+          <span className="font-semibold">{stats.totalCount}件</span>
+        </p>
+        <p className="text-sm text-[#1d1d1f]">
+          平均改善度：
+          <span className="font-semibold">
+            {formatImprovementDelta(stats.averageImprovementDelta)}
+          </span>
+        </p>
+        <p className="text-sm text-[#1d1d1f]">
+          平均おすすめ度：
+          <span className="font-semibold">
+            {formatAverageRecommendScore(stats.averageRecommendScore)}
+          </span>
+        </p>
       </div>
 
       <label className="block space-y-2">
@@ -95,7 +115,7 @@ export function ReaderFeedbackDashboard({
         <select
           value={selectedBook}
           onChange={(event) => setSelectedBook(event.target.value)}
-          className="w-full rounded-2xl bg-white px-4 py-3 text-sm text-[#1d1d1f] ring-1 ring-[#f2f2f7]"
+          className="w-full rounded-2xl bg-white px-4 py-3.5 text-[15px] text-[#1d1d1f] ring-1 ring-[#f2f2f7]"
         >
           {filterOptions.map((title) => (
             <option key={title} value={title}>
@@ -116,69 +136,69 @@ export function ReaderFeedbackDashboard({
       ) : null}
 
       {!loading && !error && items.length === 0 ? (
-        <p className="text-sm text-[#86868b]">まだ読者の声はありません。</p>
+        <p className="text-sm text-[#86868b]">まだ行動変容の記録はありません。</p>
       ) : null}
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {items.map((item) => (
           <article
             key={item.id}
-            className="rounded-2xl bg-white px-4 py-4 ring-1 ring-[#f2f2f7]"
+            className="overflow-hidden rounded-3xl bg-white ring-1 ring-[#f2f2f7]"
           >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="font-medium text-[#1d1d1f]">{item.bookTitle}</p>
-                <p className="mt-1 text-xs text-[#86868b]">
-                  {item.ageGroup} · {item.gender} ·{" "}
-                  {formatFeedbackDate(item.createdAt)}
-                </p>
-              </div>
-              <p className="shrink-0 text-sm font-semibold text-[#1d1d1f]">
-                {formatImprovementRate(item.improvementRate)}
+            <div className="bg-[#1d1d1f] px-5 py-6 text-white">
+              <p className="text-[10px] font-medium tracking-[0.2em] text-white/60">
+                今日の行動
+              </p>
+              <p className="mt-3 text-[1.125rem] leading-snug font-semibold">
+                {item.todayAction}
               </p>
             </div>
 
-            <div className="mt-4 space-y-3 text-sm leading-relaxed">
-              <div>
-                <p className="text-xs text-[#86868b]">悩み</p>
-                <p className="mt-1 text-[#1d1d1f]">{item.worry}</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 text-center">
-                <div className="rounded-xl bg-[#f5f5f7] px-2 py-2">
-                  <p className="text-[10px] text-[#86868b]">年代</p>
-                  <p className="mt-1 font-semibold">{item.ageGroup}</p>
+            <div className="space-y-4 px-5 py-5 text-sm">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-[#86868b]">年代</p>
+                  <p className="mt-1 font-medium text-[#1d1d1f]">
+                    {item.ageGroup}
+                  </p>
                 </div>
-                <div className="rounded-xl bg-[#f5f5f7] px-2 py-2">
-                  <p className="text-[10px] text-[#86868b]">性別</p>
-                  <p className="mt-1 font-semibold">{item.gender}</p>
-                </div>
-                <div className="rounded-xl bg-[#f5f5f7] px-2 py-2">
-                  <p className="text-[10px] text-[#86868b]">朝</p>
-                  <p className="mt-1 font-semibold">{item.morningScore}</p>
-                </div>
-                <div className="rounded-xl bg-[#f5f5f7] px-2 py-2">
-                  <p className="text-[10px] text-[#86868b]">夜</p>
-                  <p className="mt-1 font-semibold">{item.eveningScore}</p>
+                <div>
+                  <p className="text-xs text-[#86868b]">性別</p>
+                  <p className="mt-1 font-medium text-[#1d1d1f]">
+                    {item.gender}
+                  </p>
                 </div>
               </div>
 
               <div>
-                <p className="text-xs text-[#86868b]">今日の行動</p>
-                <p className="mt-1 text-[#1d1d1f]">{item.todayAction}</p>
+                <p className="text-xs text-[#86868b]">本のタイトル</p>
+                <p
+                  className="mt-1 truncate font-medium text-[#1d1d1f]"
+                  title={item.bookTitle}
+                >
+                  {item.bookTitle}
+                </p>
               </div>
 
               <div>
-                <p className="text-xs text-[#86868b]">学び</p>
-                <p className="mt-1 text-[#86868b]">{item.learning}</p>
+                <p className="text-xs text-[#86868b]">改善度</p>
+                <p className="mt-1 text-lg font-semibold text-[#1d1d1f]">
+                  {formatImprovementDelta(getItemImprovementDelta(item))}
+                </p>
               </div>
 
               {item.messageToAuthor ? (
                 <div>
-                  <p className="text-xs text-[#86868b]">振り返り</p>
-                  <p className="mt-1 text-[#86868b]">{item.messageToAuthor}</p>
+                  <p className="text-xs text-[#86868b]">著者に伝えたいこと</p>
+                  <p className="mt-2 leading-relaxed text-[#1d1d1f]">
+                    {item.messageToAuthor}
+                  </p>
                 </div>
-              ) : null}
+              ) : (
+                <p className="text-xs text-[#86868b]">
+                  著者に伝えたいこと：未記入
+                </p>
+              )}
             </div>
           </article>
         ))}

@@ -16,8 +16,9 @@ import {
 } from "@/lib/books";
 import {
   appendDailyRecord,
+  calculateImprovementDelta,
   calculateImprovementRate,
-  formatImprovementRate,
+  formatImprovementDelta,
   formatRecordDate,
   loadDailyRecords,
   type DailyRecord,
@@ -48,16 +49,33 @@ const selectClassName =
 const feedbackNoticeText =
   "投稿いただいたコメント・振り返り・学びは、個人が特定されない形で、サービス改善や著者へのフィードバック、紹介資料等に活用させていただく場合があります。";
 
+const primaryButtonClassName =
+  "min-h-[56px] w-full rounded-full bg-[#0071e3] px-6 py-5 text-base font-medium text-white transition hover:bg-[#0077ed] active:opacity-80";
+
+const saveButtonClassName =
+  "min-h-[56px] w-full rounded-full bg-[#1d1d1f] px-6 py-5 text-base font-medium text-white transition hover:bg-[#333336] active:opacity-80 disabled:opacity-60";
+
+const secondaryButtonClassName =
+  "min-h-[56px] w-full rounded-2xl px-5 py-5 text-base font-medium text-[#1d1d1f] transition active:opacity-80";
+
 function ScoreSlider({
   id,
   label,
   value,
   onChange,
+  min = 1,
+  max = 10,
+  hintLeft = "1 軽い",
+  hintRight = "10 つらい",
 }: {
   id: string;
   label: string;
   value: number;
   onChange: (value: number) => void;
+  min?: number;
+  max?: number;
+  hintLeft?: string;
+  hintRight?: string;
 }) {
   return (
     <div className="space-y-4 rounded-3xl bg-[#f5f5f7] px-5 py-5">
@@ -72,15 +90,15 @@ function ScoreSlider({
       <input
         id={id}
         type="range"
-        min={1}
-        max={10}
+        min={min}
+        max={max}
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
         className="h-2 w-full cursor-pointer appearance-none rounded-full bg-[#d2d2d7] accent-[#0071e3]"
       />
       <div className="flex justify-between text-xs text-[#86868b]">
-        <span>1 軽い</span>
-        <span>10 つらい</span>
+        <span>{hintLeft}</span>
+        <span>{hintRight}</span>
       </div>
     </div>
   );
@@ -93,11 +111,11 @@ function ImprovementSummary({
   morningScore: number;
   eveningScore: number;
 }) {
-  const improvementRate = calculateImprovementRate(morningScore, eveningScore);
+  const improvementDelta = calculateImprovementDelta(morningScore, eveningScore);
 
   return (
     <div className="rounded-3xl bg-[#1d1d1f] px-6 py-6 text-center text-white">
-      <p className="text-xs text-white/70">改善率</p>
+      <p className="text-xs text-white/70">改善度</p>
       <div className="mt-4 flex items-center justify-center gap-6">
         <div>
           <p className="text-xs text-white/70">朝</p>
@@ -110,7 +128,7 @@ function ImprovementSummary({
         </div>
       </div>
       <p className="mt-4 text-[2rem] font-semibold tracking-tight">
-        {formatImprovementRate(improvementRate)}
+        {formatImprovementDelta(improvementDelta)}
       </p>
     </div>
   );
@@ -125,36 +143,30 @@ function BookSelector({
   selectedBookId: string;
   onChange: (bookId: string) => void;
 }) {
-  return (
-    <div className="space-y-3">
-      <p className="text-sm font-medium text-[#1d1d1f]">使用する本</p>
-      <div className="grid grid-cols-2 gap-2">
-        {books.map((book) => {
-          const selected = selectedBookId === book.id;
+  const selectedBook = books.find((book) => book.id === selectedBookId);
 
-          return (
-            <button
-              key={book.id}
-              type="button"
-              onClick={() => onChange(book.id)}
-              className={`rounded-2xl px-4 py-3 text-left transition ${
-                selected
-                  ? "bg-[#1d1d1f] text-white"
-                  : "bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#ebebef]"
-              }`}
-            >
-              <span className="block text-[14px] font-medium">{book.title}</span>
-              <span
-                className={`mt-1 block text-xs ${
-                  selected ? "text-white/70" : "text-[#86868b]"
-                }`}
-              >
-                {book.framework}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+  return (
+    <div className="rounded-2xl bg-[#f5f5f7] px-4 py-3">
+      <label htmlFor="book-select" className="block space-y-2">
+        <span className="text-xs text-[#86868b]">参考にする本</span>
+        <select
+          id="book-select"
+          value={selectedBookId}
+          onChange={(event) => onChange(event.target.value)}
+          className={selectClassName}
+        >
+          {books.map((book) => (
+            <option key={book.id} value={book.id}>
+              {book.title}
+            </option>
+          ))}
+        </select>
+        {selectedBook ? (
+          <p className="text-xs text-[#86868b]">
+            {selectedBook.author} · {selectedBook.framework}
+          </p>
+        ) : null}
+      </label>
     </div>
   );
 }
@@ -223,14 +235,17 @@ function AdminPanel({
   }
 
   return (
-    <section className="mt-10 space-y-8 rounded-3xl border border-[#e8e8ed] bg-[#f5f5f7] px-5 py-8">
+    <section className="mt-6 space-y-8">
+      <ReaderFeedbackDashboard bookTitles={bookTitles} />
+
+      <section className="space-y-8 rounded-3xl border border-[#e8e8ed] bg-[#f5f5f7] px-5 py-8">
       <div className="space-y-2">
         <p className="text-xs font-medium tracking-widest text-[#86868b]">
-          管理者モード
+          書籍管理
         </p>
-        <h2 className="text-lg font-semibold text-[#1d1d1f]">書籍を登録</h2>
-        <p className="text-sm text-[#86868b]">
-          登録した書籍は利用者が選択できます。{TEMPLATE_HINT}
+        <h2 className="text-lg font-semibold text-[#1d1d1f]">参考書籍を登録</h2>
+        <p className="text-sm leading-relaxed text-[#86868b]">
+          行動変容の参考にする書籍を追加できます。{TEMPLATE_HINT}
         </p>
       </div>
 
@@ -277,7 +292,7 @@ function AdminPanel({
 
         <button
           type="submit"
-          className="w-full rounded-full bg-[#0071e3] px-6 py-4 text-[15px] font-medium text-white transition hover:bg-[#0077ed]"
+          className={primaryButtonClassName}
         >
           書籍を登録
         </button>
@@ -297,7 +312,9 @@ function AdminPanel({
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="font-medium text-[#1d1d1f]">{book.title}</p>
+                  <p className="truncate font-medium text-[#1d1d1f]" title={book.title}>
+                    {book.title}
+                  </p>
                   <p className="mt-1 text-xs text-[#86868b]">
                     {book.author} · {book.framework}
                   </p>
@@ -314,8 +331,7 @@ function AdminPanel({
           ))}
         </div>
       ) : null}
-
-      <ReaderFeedbackDashboard bookTitles={bookTitles} />
+      </section>
     </section>
   );
 }
@@ -339,7 +355,10 @@ function HistoryList({ records }: { records: DailyRecord[] }) {
             className="rounded-3xl bg-[#f5f5f7] px-5 py-5"
           >
             <div className="flex items-center justify-between gap-3">
-              <p className="text-xs font-medium text-[#86868b]">
+              <p
+                className="truncate text-xs text-[#86868b]"
+                title={record.bookTitle}
+              >
                 {record.bookTitle}
               </p>
               <p className="text-xs text-[#86868b]">
@@ -349,8 +368,14 @@ function HistoryList({ records }: { records: DailyRecord[] }) {
 
             <div className="mt-4 space-y-3">
               <div>
+                <p className="text-xs text-[#86868b]">今日の行動</p>
+                <p className="mt-2 text-[17px] leading-snug font-semibold text-[#1d1d1f]">
+                  {record.todayAction}
+                </p>
+              </div>
+              <div>
                 <p className="text-xs text-[#86868b]">悩み</p>
-                <p className="mt-1 text-[15px] leading-relaxed text-[#1d1d1f]">
+                <p className="mt-1 text-sm leading-relaxed text-[#86868b]">
                   {record.worry}
                 </p>
               </div>
@@ -368,10 +393,15 @@ function HistoryList({ records }: { records: DailyRecord[] }) {
                   </p>
                 </div>
                 <div className="rounded-2xl bg-white px-2 py-3">
-                  <p className="text-[10px] text-[#86868b]">改善率</p>
+                  <p className="text-[10px] text-[#86868b]">改善度</p>
                   <p className="mt-1 text-sm font-semibold text-[#1d1d1f]">
-                    {record.improvementRate != null
-                      ? formatImprovementRate(record.improvementRate)
+                    {record.morningScore != null && record.eveningScore != null
+                      ? formatImprovementDelta(
+                          calculateImprovementDelta(
+                            record.morningScore,
+                            record.eveningScore,
+                          ),
+                        )
                       : "—"}
                   </p>
                 </div>
@@ -402,6 +432,7 @@ export default function Home() {
   const [result, setResult] = useState<ThoughtResult | null>(null);
   const [learning, setLearning] = useState("");
   const [messageToAuthor, setMessageToAuthor] = useState("");
+  const [recommendScore, setRecommendScore] = useState(7);
   const [ageGroup, setAgeGroup] = useState<AgeGroup>("回答しない");
   const [gender, setGender] = useState<Gender>("回答しない");
   const [agreedToFeedbackUse, setAgreedToFeedbackUse] = useState(false);
@@ -445,6 +476,7 @@ export default function Home() {
     setEveningScore(5);
     setLearning("");
     setMessageToAuthor("");
+    setRecommendScore(7);
     setAgreedToFeedbackUse(false);
     setSaveMessage("");
     setSaveError("");
@@ -455,6 +487,7 @@ export default function Home() {
     setEveningScore(5);
     setLearning("");
     setMessageToAuthor("");
+    setRecommendScore(7);
     setAgreedToFeedbackUse(false);
     setSaveMessage("");
     setSaveError("");
@@ -468,6 +501,7 @@ export default function Home() {
     setEveningScore(5);
     setLearning("");
     setMessageToAuthor("");
+    setRecommendScore(7);
     setAgreedToFeedbackUse(false);
     setError("");
   }
@@ -518,6 +552,7 @@ export default function Home() {
         improvementRate,
         learning: learning.trim(),
         messageToAuthor: messageToAuthor.trim(),
+        recommendScore,
       });
 
       const record = appendDailyRecord({
@@ -545,6 +580,7 @@ export default function Home() {
       setResult(null);
       setLearning("");
       setMessageToAuthor("");
+      setRecommendScore(7);
       setAgreedToFeedbackUse(false);
     } catch (err) {
       setSaveMessage("");
@@ -587,8 +623,8 @@ export default function Home() {
 
   return (
     <div className="min-h-full bg-white text-[#1d1d1f]">
-      <main className="mx-auto flex w-full max-w-md flex-col px-6 py-16 pb-24">
-        <header className="mb-14 space-y-4 text-center">
+      <main className="mx-auto flex w-full max-w-md flex-col px-5 py-12 pb-28 sm:px-6">
+        <header className="mb-10 space-y-4 text-center">
           <div className="flex items-center justify-end">
             <button
               type="button"
@@ -601,11 +637,11 @@ export default function Home() {
           <p className="text-xs font-medium tracking-[0.35em] text-[#86868b]">
             BOOK TO ACTION
           </p>
-          <h1 className="text-[1.75rem] leading-snug font-semibold tracking-tight text-[#1d1d1f]">
-            読んだ本を、今日の行動へ。
+          <h1 className="text-balance text-[1.625rem] leading-snug font-semibold tracking-tight text-[#1d1d1f] sm:text-[1.75rem]">
+            思想が、行動に変わる。
           </h1>
-          <p className="text-[15px] leading-relaxed text-[#86868b]">
-            毎日の悩みを、今日の行動と振り返りに変える。
+          <p className="text-pretty text-[15px] leading-relaxed text-[#86868b]">
+            著者の思想が読者の行動に変わった瞬間を記録するアプリ。
           </p>
         </header>
 
@@ -618,11 +654,13 @@ export default function Home() {
           />
         ) : (
           <>
-            <BookSelector
-              books={allBooks}
-              selectedBookId={selectedBookId}
-              onChange={handleBookChange}
-            />
+            {!result ? (
+              <BookSelector
+                books={allBooks}
+                selectedBookId={selectedBookId}
+                onChange={handleBookChange}
+              />
+            ) : null}
 
             {!result ? (
               <form onSubmit={handleConvert} className="mt-10 space-y-6">
@@ -698,7 +736,7 @@ export default function Home() {
 
                 <button
                   type="submit"
-                  className="w-full rounded-full bg-[#0071e3] px-6 py-4 text-[15px] font-medium text-white transition hover:bg-[#0077ed] active:opacity-80"
+                  className={primaryButtonClassName}
                 >
                   行動に変換する
                 </button>
@@ -706,64 +744,77 @@ export default function Home() {
             ) : null}
 
             {result ? (
-              <section aria-live="polite" className="mt-10 space-y-10">
-                <div className="rounded-2xl bg-[#f5f5f7] px-4 py-3 text-center">
-                  <p className="text-xs text-[#86868b]">思想エンジン</p>
-                  <p className="mt-1 text-sm font-medium text-[#1d1d1f]">
-                    {activeBook.title} · {activeBook.framework}
-                  </p>
-                </div>
+              <section aria-live="polite" className="mt-8 space-y-8">
+                <p
+                  className="truncate text-center text-xs text-[#86868b]"
+                  title={`${activeBook.title} · ${activeBook.framework}`}
+                >
+                  参考：
+                  {activeBook.title}
+                  <span className="mx-1.5 text-[#d2d2d7]">·</span>
+                  {activeBook.framework}
+                </p>
 
-                <article className="rounded-3xl bg-white px-6 py-6 ring-1 ring-[#f2f2f7]">
-                  <p className="text-xs font-medium text-[#86868b]">
-                    今日の悩み
+                <article className="rounded-[2rem] bg-[#1d1d1f] px-5 py-10 text-center text-white shadow-sm sm:px-6">
+                  <p className="text-[11px] font-medium tracking-[0.25em] text-white/60">
+                    今日の行動
                   </p>
-                  <p className="mt-3 text-[15px] leading-relaxed text-[#1d1d1f]">
-                    {worry.trim()}
-                  </p>
-                  <p className="mt-3 text-xs text-[#86868b]">
-                    朝の悩みレベル：{morningScore}
+                  <p className="mt-5 text-pretty text-[1.625rem] leading-snug font-semibold tracking-tight sm:text-[1.875rem]">
+                    {result.todayAction}
                   </p>
                 </article>
 
-                <div className="space-y-5">
-                  {resultItems.map((item) => (
-                    <article
-                      key={item.key}
-                      className={`rounded-3xl px-6 py-6 ${
-                        item.key === "todayAction"
-                          ? "bg-[#f5f5f7]"
-                          : "bg-white ring-1 ring-[#f2f2f7]"
-                      }`}
-                    >
-                      <p className="text-xs font-medium text-[#86868b]">
-                        {item.num} {item.label}
-                      </p>
-                      <p
-                        className={`mt-3 leading-relaxed text-[#1d1d1f] ${
-                          item.key === "todayAction"
-                            ? "text-[17px] font-medium"
-                            : "text-[15px]"
-                        }`}
+                <article className="rounded-3xl bg-[#f5f5f7] px-5 py-5">
+                  <p className="text-xs font-medium text-[#86868b]">
+                    悩みから、行動へ
+                  </p>
+                  <p className="mt-3 text-sm leading-relaxed text-[#86868b]">
+                    {worry.trim()}
+                  </p>
+                  <div className="mt-4 flex items-center justify-center gap-3 text-xs text-[#86868b]">
+                    <span className="rounded-full bg-white px-3 py-1">
+                      朝 {morningScore}
+                    </span>
+                    <span aria-hidden="true">→</span>
+                    <span className="rounded-full bg-[#1d1d1f] px-3 py-1 text-white">
+                      行動
+                    </span>
+                  </div>
+                </article>
+
+                <div className="space-y-3">
+                  <p className="text-xs font-medium tracking-widest text-[#86868b]">
+                    思考の変換
+                  </p>
+                  {resultItems
+                    .filter((item) => item.key !== "todayAction")
+                    .map((item) => (
+                      <article
+                        key={item.key}
+                        className="rounded-2xl bg-white px-5 py-4 ring-1 ring-[#f2f2f7]"
                       >
-                        {result[item.key]}
-                      </p>
-                    </article>
-                  ))}
+                        <p className="text-xs font-medium text-[#86868b]">
+                          {item.num} {item.label}
+                        </p>
+                        <p className="mt-2 text-sm leading-relaxed text-[#1d1d1f]">
+                          {result[item.key]}
+                        </p>
+                      </article>
+                    ))}
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-3">
                   <button
                     type="button"
                     onClick={handleEdit}
-                    className="min-h-[52px] w-full rounded-2xl border border-[#d2d2d7] bg-white px-5 py-4 text-[15px] font-medium text-[#1d1d1f] transition active:bg-[#f5f5f7]"
+                    className={`${secondaryButtonClassName} border border-[#d2d2d7] bg-white active:bg-[#f5f5f7]`}
                   >
                     編集する
                   </button>
                   <button
                     type="button"
                     onClick={handleTryNewWorry}
-                    className="min-h-[52px] w-full rounded-2xl bg-[#f5f5f7] px-5 py-4 text-[15px] font-medium text-[#1d1d1f] transition active:bg-[#ebebef]"
+                    className={`${secondaryButtonClassName} bg-[#f5f5f7] active:bg-[#ebebef]`}
                   >
                     別の悩みで試す
                   </button>
@@ -797,7 +848,7 @@ export default function Home() {
 
                   <label htmlFor="message-to-author" className="block space-y-3">
                     <span className="text-sm font-medium text-[#1d1d1f]">
-                      振り返り・著者へのメッセージ
+                      著者に伝えたいこと
                     </span>
                     <textarea
                       id="message-to-author"
@@ -806,10 +857,21 @@ export default function Home() {
                       onChange={(event) =>
                         setMessageToAuthor(event.target.value)
                       }
-                      placeholder="例：この本の思想が日常の選択に活きています"
+                      placeholder="この本を読んで実践したことや感謝を自由に記入してください"
                       className={textareaClassName}
                     />
                   </label>
+
+                  <ScoreSlider
+                    id="recommend-score"
+                    label="この本を友人に勧めたいですか？"
+                    value={recommendScore}
+                    onChange={setRecommendScore}
+                    min={0}
+                    max={10}
+                    hintLeft="0 勧めない"
+                    hintRight="10 ぜひ勧めたい"
+                  />
 
                   <p className="text-xs leading-relaxed text-[#86868b]">
                     {feedbackNoticeText}
@@ -838,7 +900,7 @@ export default function Home() {
                     type="button"
                     onClick={() => void handleSaveDailyRecord()}
                     disabled={isSaving || !agreedToFeedbackUse}
-                    className="w-full rounded-full bg-[#1d1d1f] px-6 py-4 text-[15px] font-medium text-white transition hover:bg-[#333336] active:opacity-80 disabled:opacity-60"
+                    className={saveButtonClassName}
                   >
                     {isSaving ? "保存中..." : "今日の記録を保存"}
                   </button>
@@ -865,7 +927,7 @@ export default function Home() {
 
             <footer className="mt-20 text-center">
               <p className="text-sm leading-loose text-[#86868b]">
-                読んで終わらせない。行動に変える。
+                本を読むだけで終わらない。行動で変える。
               </p>
             </footer>
           </>
