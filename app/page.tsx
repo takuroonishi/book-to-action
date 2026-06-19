@@ -22,11 +22,9 @@ import {
   loadDailyRecords,
   type DailyRecord,
 } from "@/lib/daily-records";
-import {
-  aggregateVoicesByBook,
-  appendReaderVoice,
-  loadReaderVoices,
-} from "@/lib/reader-voices";
+import { insertReaderFeedback } from "@/lib/reader-feedback";
+import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { ReaderFeedbackDashboard } from "@/components/ReaderFeedbackDashboard";
 
 function getTodayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -172,19 +170,17 @@ const emptyAdminForm: AdminFormState = {
 
 function AdminPanel({
   customBooks,
+  bookTitles,
   onRegister,
   onDelete,
 }: {
   customBooks: CustomBook[];
+  bookTitles: string[];
   onRegister: (book: Omit<CustomBook, "id">) => void;
   onDelete: (bookId: string) => void;
 }) {
   const [form, setForm] = useState<AdminFormState>(emptyAdminForm);
   const [message, setMessage] = useState("");
-  const readerVoiceSummary = useMemo(
-    () => aggregateVoicesByBook(loadReaderVoices()),
-    [],
-  );
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -307,112 +303,7 @@ function AdminPanel({
         </div>
       ) : null}
 
-      <div className="space-y-3 border-t border-[#e8e8ed] pt-6">
-        <p className="text-sm font-medium text-[#1d1d1f]">読者の声（集計プレビュー）</p>
-        {readerVoiceSummary.length > 0 ? (
-          <div className="space-y-2">
-            {readerVoiceSummary.map((summary) => (
-              <article
-                key={summary.bookId}
-                className="rounded-2xl bg-white px-4 py-4 ring-1 ring-[#f2f2f7]"
-              >
-                <p className="font-medium text-[#1d1d1f]">{summary.bookTitle}</p>
-                <p className="mt-1 text-xs text-[#86868b]">
-                  {summary.bookAuthor} · {summary.count}件
-                </p>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-[#86868b]">まだ読者の声はありません。</p>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function AuthorFeedbackForm({
-  bookTitle,
-  bookAuthor,
-  onSubmit,
-  savedMessage,
-}: {
-  bookTitle: string;
-  bookAuthor: string;
-  onSubmit: (whatChanged: string, messageToAuthor: string) => void;
-  savedMessage: string;
-}) {
-  const [whatChanged, setWhatChanged] = useState("");
-  const [messageToAuthor, setMessageToAuthor] = useState("");
-  const [formError, setFormError] = useState("");
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!whatChanged.trim() && !messageToAuthor.trim()) {
-      setFormError("どちらか一方は入力してください。");
-      return;
-    }
-
-    setFormError("");
-    onSubmit(whatChanged.trim(), messageToAuthor.trim());
-    setWhatChanged("");
-    setMessageToAuthor("");
-  }
-
-  return (
-    <section className="mt-16 space-y-6 rounded-3xl bg-[#f5f5f7] px-6 py-8">
-      <div className="space-y-2 text-center">
-        <p className="text-xs font-medium tracking-widest text-[#86868b]">
-          著者フィードバック
-        </p>
-        <h2 className="text-lg font-semibold text-[#1d1d1f]">読者の声</h2>
-        <p className="text-sm text-[#86868b]">
-          {bookTitle}（{bookAuthor}）
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <label className="block space-y-3">
-          <span className="text-sm font-medium text-[#1d1d1f]">
-            この本を読んで何が変わりましたか？
-          </span>
-          <textarea
-            rows={4}
-            value={whatChanged}
-            onChange={(event) => setWhatChanged(event.target.value)}
-            placeholder="例：人の評価より、自分の行動に集中できるようになった"
-            className={textareaClassName}
-          />
-        </label>
-
-        <label className="block space-y-3">
-          <span className="text-sm font-medium text-[#1d1d1f]">
-            著者へメッセージ
-          </span>
-          <textarea
-            rows={4}
-            value={messageToAuthor}
-            onChange={(event) => setMessageToAuthor(event.target.value)}
-            placeholder="例：この本の思想が日常の選択に活きています"
-            className={textareaClassName}
-          />
-        </label>
-
-        <button
-          type="submit"
-          className="w-full rounded-full bg-[#1d1d1f] px-6 py-4 text-[15px] font-medium text-white transition hover:bg-[#333336]"
-        >
-          読者の声を送る
-        </button>
-
-        {savedMessage ? (
-          <p className="text-center text-sm text-[#86868b]">{savedMessage}</p>
-        ) : null}
-        {formError ? (
-          <p className="text-center text-sm text-[#86868b]">{formError}</p>
-        ) : null}
-      </form>
+      <ReaderFeedbackDashboard bookTitles={bookTitles} />
     </section>
   );
 }
@@ -498,13 +389,20 @@ export default function Home() {
   const [eveningScore, setEveningScore] = useState(5);
   const [result, setResult] = useState<ThoughtResult | null>(null);
   const [learning, setLearning] = useState("");
+  const [messageToAuthor, setMessageToAuthor] = useState("");
+  const [readerName, setReaderName] = useState("");
   const [error, setError] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
-  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const [records, setRecords] = useState<DailyRecord[]>([]);
 
   const todayKey = getTodayKey();
   const allBooks = useMemo(() => getAllBooks(customBooks), [customBooks]);
+  const allBookTitles = useMemo(
+    () => allBooks.map((book) => book.title),
+    [allBooks],
+  );
   const activeBook = getBookById(selectedBookId, customBooks);
   const resultItems = [
     { num: "①", label: activeBook.labels[0], key: "myTask" as const },
@@ -532,14 +430,18 @@ export default function Home() {
     setResult(generateThoughtResult(selectedBookId, worry, customBooks));
     setEveningScore(5);
     setLearning("");
+    setMessageToAuthor("");
     setSaveMessage("");
+    setSaveError("");
   }
 
   function handleEdit() {
     setResult(null);
     setEveningScore(5);
     setLearning("");
+    setMessageToAuthor("");
     setSaveMessage("");
+    setSaveError("");
     setError("");
   }
 
@@ -549,45 +451,88 @@ export default function Home() {
     setMorningScore(8);
     setEveningScore(5);
     setLearning("");
+    setMessageToAuthor("");
     setSaveMessage("");
+    setSaveError("");
     setError("");
   }
 
-  function handleSaveDailyRecord() {
+  async function handleSaveDailyRecord() {
     if (!result || !worry.trim()) {
       return;
     }
 
     if (!learning.trim()) {
+      setSaveError("");
       setSaveMessage("今日の学びを入力してください。");
+      return;
+    }
+
+    if (!isSupabaseConfigured()) {
+      setSaveMessage("");
+      setSaveError(
+        "Supabaseが未設定です。.env.local に接続情報を設定してください。",
+      );
       return;
     }
 
     const improvementRate = calculateImprovementRate(morningScore, eveningScore);
 
-    const record = appendDailyRecord({
-      date: todayKey,
-      bookId: activeBook.id,
-      bookTitle: activeBook.title,
-      bookAuthor: activeBook.author,
-      bookFramework: activeBook.framework,
-      worry: worry.trim(),
-      myTask: result.myTask,
-      othersTask: result.othersTask,
-      todayAction: result.todayAction,
-      morningScore,
-      eveningScore,
-      improvementRate,
-      learning: learning.trim(),
-    });
+    setIsSaving(true);
+    setSaveMessage("保存中...");
+    setSaveError("");
 
-    setRecords([record, ...records]);
-    setSaveMessage("今日の記録を保存しました。");
-    setWorry("");
-    setMorningScore(8);
-    setEveningScore(5);
-    setResult(null);
-    setLearning("");
+    try {
+      await insertReaderFeedback({
+        readerName: readerName.trim() || "匿名",
+        bookId: activeBook.id,
+        bookTitle: activeBook.title,
+        bookAuthor: activeBook.author,
+        bookFramework: activeBook.framework,
+        worry: worry.trim(),
+        morningScore,
+        todayAction: result.todayAction,
+        eveningScore,
+        improvementRate,
+        learning: learning.trim(),
+        messageToAuthor: messageToAuthor.trim(),
+      });
+
+      const record = appendDailyRecord({
+        date: todayKey,
+        bookId: activeBook.id,
+        bookTitle: activeBook.title,
+        bookAuthor: activeBook.author,
+        bookFramework: activeBook.framework,
+        worry: worry.trim(),
+        myTask: result.myTask,
+        othersTask: result.othersTask,
+        todayAction: result.todayAction,
+        morningScore,
+        eveningScore,
+        improvementRate,
+        learning: learning.trim(),
+      });
+
+      setRecords([record, ...records]);
+      setSaveError("");
+      setSaveMessage("今日の記録を保存しました。管理者モードに反映されます。");
+      setWorry("");
+      setMorningScore(8);
+      setEveningScore(5);
+      setResult(null);
+      setLearning("");
+      setMessageToAuthor("");
+    } catch (err) {
+      setSaveMessage("");
+      setSaveError(
+        err instanceof Error
+          ? `保存に失敗しました: ${err.message}`
+          : "保存に失敗しました。",
+      );
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   function handleBookChange(bookId: string) {
@@ -617,21 +562,6 @@ export default function Home() {
     }
   }
 
-  function handleSaveReaderVoice(whatChanged: string, messageToAuthor: string) {
-    appendReaderVoice({
-      bookId: activeBook.id,
-      bookTitle: activeBook.title,
-      bookAuthor: activeBook.author,
-      bookFramework: activeBook.framework,
-      whatChanged,
-      messageToAuthor,
-      dailyRecordCount: records.length,
-      submittedAt: todayKey,
-    });
-
-    setFeedbackMessage("読者の声を保存しました。ありがとうございます。");
-  }
-
   return (
     <div className="min-h-full bg-white text-[#1d1d1f]">
       <main className="mx-auto flex w-full max-w-md flex-col px-6 py-16 pb-24">
@@ -659,6 +589,7 @@ export default function Home() {
         {isAdminMode ? (
           <AdminPanel
             customBooks={customBooks}
+            bookTitles={allBookTitles}
             onRegister={handleRegisterBook}
             onDelete={handleDeleteBook}
           />
@@ -675,6 +606,21 @@ export default function Home() {
                 <p className="text-xs font-medium tracking-widest text-[#86868b]">
                   朝
                 </p>
+
+                <label htmlFor="reader-name" className="block space-y-3">
+                  <span className="text-sm font-medium text-[#1d1d1f]">
+                    読者名（任意）
+                  </span>
+                  <input
+                    id="reader-name"
+                    name="readerName"
+                    type="text"
+                    value={readerName}
+                    onChange={(event) => setReaderName(event.target.value)}
+                    placeholder="例：たろう"
+                    className="w-full rounded-2xl bg-[#f5f5f7] px-4 py-3 text-[15px] text-[#1d1d1f] outline-none ring-1 ring-transparent focus:ring-[#0071e3]"
+                  />
+                </label>
 
                 <label htmlFor="worry" className="block space-y-3">
                   <span className="text-sm font-medium text-[#1d1d1f]">
@@ -803,6 +749,22 @@ export default function Home() {
                     />
                   </label>
 
+                  <label htmlFor="message-to-author" className="block space-y-3">
+                    <span className="text-sm font-medium text-[#1d1d1f]">
+                      振り返り・著者へのメッセージ
+                    </span>
+                    <textarea
+                      id="message-to-author"
+                      rows={4}
+                      value={messageToAuthor}
+                      onChange={(event) =>
+                        setMessageToAuthor(event.target.value)
+                      }
+                      placeholder="例：この本の思想が日常の選択に活きています"
+                      className={textareaClassName}
+                    />
+                  </label>
+
                   <ImprovementSummary
                     morningScore={morningScore}
                     eveningScore={eveningScore}
@@ -810,10 +772,11 @@ export default function Home() {
 
                   <button
                     type="button"
-                    onClick={handleSaveDailyRecord}
-                    className="w-full rounded-full bg-[#1d1d1f] px-6 py-4 text-[15px] font-medium text-white transition hover:bg-[#333336] active:opacity-80"
+                    onClick={() => void handleSaveDailyRecord()}
+                    disabled={isSaving}
+                    className="w-full rounded-full bg-[#1d1d1f] px-6 py-4 text-[15px] font-medium text-white transition hover:bg-[#333336] active:opacity-80 disabled:opacity-60"
                   >
-                    今日の記録を保存
+                    {isSaving ? "保存中..." : "今日の記録を保存"}
                   </button>
 
                   {saveMessage ? (
@@ -821,18 +784,20 @@ export default function Home() {
                       {saveMessage}
                     </p>
                   ) : null}
+
+                  {saveError ? (
+                    <p
+                      className="rounded-2xl bg-[#fff2f2] px-4 py-3 text-center text-sm text-[#b42318]"
+                      role="alert"
+                    >
+                      {saveError}
+                    </p>
+                  ) : null}
                 </div>
               </section>
             ) : null}
 
             <HistoryList records={records} />
-
-            <AuthorFeedbackForm
-              bookTitle={activeBook.title}
-              bookAuthor={activeBook.author}
-              onSubmit={handleSaveReaderVoice}
-              savedMessage={feedbackMessage}
-            />
 
             <footer className="mt-20 text-center">
               <p className="text-sm leading-loose text-[#86868b]">
