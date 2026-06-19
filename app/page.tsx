@@ -22,7 +22,13 @@ import {
   loadDailyRecords,
   type DailyRecord,
 } from "@/lib/daily-records";
-import { insertReaderFeedback } from "@/lib/reader-feedback";
+import {
+  insertReaderFeedback,
+  AGE_GROUP_OPTIONS,
+  GENDER_OPTIONS,
+  type AgeGroup,
+  type Gender,
+} from "@/lib/reader-feedback";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { ReaderFeedbackDashboard } from "@/components/ReaderFeedbackDashboard";
 
@@ -35,6 +41,12 @@ const textareaClassName =
 
 const inputClassName =
   "w-full rounded-2xl bg-[#f5f5f7] px-4 py-3.5 text-[15px] text-[#1d1d1f] placeholder:text-[#aeaeb2] transition focus:bg-[#ebebef] focus:outline-none";
+
+const selectClassName =
+  "w-full rounded-2xl bg-[#f5f5f7] px-4 py-3.5 text-[15px] text-[#1d1d1f] transition focus:bg-[#ebebef] focus:outline-none";
+
+const feedbackNoticeText =
+  "投稿いただいたコメント・振り返り・学びは、個人が特定されない形で、サービス改善や著者へのフィードバック、紹介資料等に活用させていただく場合があります。";
 
 function ScoreSlider({
   id,
@@ -390,7 +402,9 @@ export default function Home() {
   const [result, setResult] = useState<ThoughtResult | null>(null);
   const [learning, setLearning] = useState("");
   const [messageToAuthor, setMessageToAuthor] = useState("");
-  const [readerName, setReaderName] = useState("");
+  const [ageGroup, setAgeGroup] = useState<AgeGroup>("回答しない");
+  const [gender, setGender] = useState<Gender>("回答しない");
+  const [agreedToFeedbackUse, setAgreedToFeedbackUse] = useState(false);
   const [error, setError] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
   const [saveError, setSaveError] = useState("");
@@ -431,6 +445,7 @@ export default function Home() {
     setEveningScore(5);
     setLearning("");
     setMessageToAuthor("");
+    setAgreedToFeedbackUse(false);
     setSaveMessage("");
     setSaveError("");
   }
@@ -440,6 +455,7 @@ export default function Home() {
     setEveningScore(5);
     setLearning("");
     setMessageToAuthor("");
+    setAgreedToFeedbackUse(false);
     setSaveMessage("");
     setSaveError("");
     setError("");
@@ -452,8 +468,7 @@ export default function Home() {
     setEveningScore(5);
     setLearning("");
     setMessageToAuthor("");
-    setSaveMessage("");
-    setSaveError("");
+    setAgreedToFeedbackUse(false);
     setError("");
   }
 
@@ -465,6 +480,12 @@ export default function Home() {
     if (!learning.trim()) {
       setSaveError("");
       setSaveMessage("今日の学びを入力してください。");
+      return;
+    }
+
+    if (!agreedToFeedbackUse) {
+      setSaveMessage("");
+      setSaveError("内容の利用に同意してください。");
       return;
     }
 
@@ -484,7 +505,8 @@ export default function Home() {
 
     try {
       await insertReaderFeedback({
-        readerName: readerName.trim() || "匿名",
+        ageGroup,
+        gender,
         bookId: activeBook.id,
         bookTitle: activeBook.title,
         bookAuthor: activeBook.author,
@@ -523,6 +545,7 @@ export default function Home() {
       setResult(null);
       setLearning("");
       setMessageToAuthor("");
+      setAgreedToFeedbackUse(false);
     } catch (err) {
       setSaveMessage("");
       setSaveError(
@@ -607,19 +630,42 @@ export default function Home() {
                   朝
                 </p>
 
-                <label htmlFor="reader-name" className="block space-y-3">
-                  <span className="text-sm font-medium text-[#1d1d1f]">
-                    読者名（任意）
-                  </span>
-                  <input
-                    id="reader-name"
-                    name="readerName"
-                    type="text"
-                    value={readerName}
-                    onChange={(event) => setReaderName(event.target.value)}
-                    placeholder="例：たろう"
-                    className="w-full rounded-2xl bg-[#f5f5f7] px-4 py-3 text-[15px] text-[#1d1d1f] outline-none ring-1 ring-transparent focus:ring-[#0071e3]"
-                  />
+                <label htmlFor="age-group" className="block space-y-3">
+                  <span className="text-sm font-medium text-[#1d1d1f]">年代</span>
+                  <select
+                    id="age-group"
+                    name="ageGroup"
+                    value={ageGroup}
+                    onChange={(event) =>
+                      setAgeGroup(event.target.value as AgeGroup)
+                    }
+                    className={selectClassName}
+                  >
+                    {AGE_GROUP_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label htmlFor="gender" className="block space-y-3">
+                  <span className="text-sm font-medium text-[#1d1d1f]">性別</span>
+                  <select
+                    id="gender"
+                    name="gender"
+                    value={gender}
+                    onChange={(event) =>
+                      setGender(event.target.value as Gender)
+                    }
+                    className={selectClassName}
+                  >
+                    {GENDER_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
                 </label>
 
                 <label htmlFor="worry" className="block space-y-3">
@@ -765,6 +811,24 @@ export default function Home() {
                     />
                   </label>
 
+                  <p className="text-xs leading-relaxed text-[#86868b]">
+                    {feedbackNoticeText}
+                  </p>
+
+                  <label className="flex items-start gap-3 rounded-2xl bg-[#f5f5f7] px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={agreedToFeedbackUse}
+                      onChange={(event) =>
+                        setAgreedToFeedbackUse(event.target.checked)
+                      }
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-[#0071e3]"
+                    />
+                    <span className="text-sm text-[#1d1d1f]">
+                      上記内容に同意する
+                    </span>
+                  </label>
+
                   <ImprovementSummary
                     morningScore={morningScore}
                     eveningScore={eveningScore}
@@ -773,7 +837,7 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={() => void handleSaveDailyRecord()}
-                    disabled={isSaving}
+                    disabled={isSaving || !agreedToFeedbackUse}
                     className="w-full rounded-full bg-[#1d1d1f] px-6 py-4 text-[15px] font-medium text-white transition hover:bg-[#333336] active:opacity-80 disabled:opacity-60"
                   >
                     {isSaving ? "保存中..." : "今日の記録を保存"}

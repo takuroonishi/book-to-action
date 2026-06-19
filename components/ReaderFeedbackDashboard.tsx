@@ -129,7 +129,8 @@ export function ReaderFeedbackDashboard({
               <div>
                 <p className="font-medium text-[#1d1d1f]">{item.bookTitle}</p>
                 <p className="mt-1 text-xs text-[#86868b]">
-                  {item.readerName} · {formatFeedbackDate(item.createdAt)}
+                  {item.ageGroup} · {item.gender} ·{" "}
+                  {formatFeedbackDate(item.createdAt)}
                 </p>
               </div>
               <p className="shrink-0 text-sm font-semibold text-[#1d1d1f]">
@@ -144,6 +145,14 @@ export function ReaderFeedbackDashboard({
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-center">
+                <div className="rounded-xl bg-[#f5f5f7] px-2 py-2">
+                  <p className="text-[10px] text-[#86868b]">年代</p>
+                  <p className="mt-1 font-semibold">{item.ageGroup}</p>
+                </div>
+                <div className="rounded-xl bg-[#f5f5f7] px-2 py-2">
+                  <p className="text-[10px] text-[#86868b]">性別</p>
+                  <p className="mt-1 font-semibold">{item.gender}</p>
+                </div>
                 <div className="rounded-xl bg-[#f5f5f7] px-2 py-2">
                   <p className="text-[10px] text-[#86868b]">朝</p>
                   <p className="mt-1 font-semibold">{item.morningScore}</p>

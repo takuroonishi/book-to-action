@@ -5,9 +5,25 @@ import type {
   ReaderFeedbackRow,
 } from "@/lib/supabase/database.types";
 
+export const AGE_GROUP_OPTIONS = [
+  "10代",
+  "20代",
+  "30代",
+  "40代",
+  "50代",
+  "60代以上",
+  "回答しない",
+] as const;
+
+export const GENDER_OPTIONS = ["男性", "女性", "その他", "回答しない"] as const;
+
+export type AgeGroup = (typeof AGE_GROUP_OPTIONS)[number];
+export type Gender = (typeof GENDER_OPTIONS)[number];
+
 export type ReaderFeedback = {
   id: string;
-  readerName: string;
+  ageGroup: AgeGroup;
+  gender: Gender;
   bookId: string;
   bookTitle: string;
   bookAuthor: string;
@@ -27,7 +43,8 @@ export type ReaderFeedbackInput = Omit<ReaderFeedback, "id" | "createdAt">;
 function mapRow(row: ReaderFeedbackRow): ReaderFeedback {
   return {
     id: row.id,
-    readerName: row.reader_name ?? "",
+    ageGroup: row.age_group as AgeGroup,
+    gender: row.gender as Gender,
     bookId: row.book_id,
     bookTitle: row.book_title,
     bookAuthor: row.book_author,
@@ -45,7 +62,8 @@ function mapRow(row: ReaderFeedbackRow): ReaderFeedback {
 
 function toInsert(input: ReaderFeedbackInput): ReaderFeedbackInsert {
   return {
-    reader_name: input.readerName.trim() || "匿名",
+    age_group: input.ageGroup,
+    gender: input.gender,
     book_id: input.bookId,
     book_title: input.bookTitle,
     book_author: input.bookAuthor,

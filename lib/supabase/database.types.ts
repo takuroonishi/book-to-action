@@ -1,6 +1,7 @@
 export type ReaderFeedbackRow = {
   id: string;
-  reader_name: string;
+  age_group: string;
+  gender: string;
   book_id: string;
   book_title: string;
   book_author: string;
@@ -16,7 +17,8 @@ export type ReaderFeedbackRow = {
 };
 
 export type ReaderFeedbackInsert = {
-  reader_name?: string;
+  age_group: string;
+  gender: string;
   book_id: string;
   book_title: string;
   book_author: string;

@@ -3,7 +3,8 @@
 
 create table if not exists public.reader_feedback (
   id uuid primary key default gen_random_uuid(),
-  reader_name text not null default '匿名',
+  age_group text not null default '回答しない',
+  gender text not null default '回答しない',
   book_id text not null,
   book_title text not null,
   book_author text not null default '',
