@@ -16,6 +16,8 @@ import {
 } from "@/lib/books";
 import {
   appendDailyRecord,
+  calculateImprovementRate,
+  formatImprovementRate,
   formatRecordDate,
   loadDailyRecords,
   type DailyRecord,
@@ -35,6 +37,74 @@ const textareaClassName =
 
 const inputClassName =
   "w-full rounded-2xl bg-[#f5f5f7] px-4 py-3.5 text-[15px] text-[#1d1d1f] placeholder:text-[#aeaeb2] transition focus:bg-[#ebebef] focus:outline-none";
+
+function ScoreSlider({
+  id,
+  label,
+  value,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <div className="space-y-4 rounded-3xl bg-[#f5f5f7] px-5 py-5">
+      <div className="flex items-center justify-between">
+        <label htmlFor={id} className="text-sm font-medium text-[#1d1d1f]">
+          {label}
+        </label>
+        <span className="text-[2rem] leading-none font-semibold text-[#1d1d1f]">
+          {value}
+        </span>
+      </div>
+      <input
+        id={id}
+        type="range"
+        min={1}
+        max={10}
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className="h-2 w-full cursor-pointer appearance-none rounded-full bg-[#d2d2d7] accent-[#0071e3]"
+      />
+      <div className="flex justify-between text-xs text-[#86868b]">
+        <span>1 軽い</span>
+        <span>10 つらい</span>
+      </div>
+    </div>
+  );
+}
+
+function ImprovementSummary({
+  morningScore,
+  eveningScore,
+}: {
+  morningScore: number;
+  eveningScore: number;
+}) {
+  const improvementRate = calculateImprovementRate(morningScore, eveningScore);
+
+  return (
+    <div className="rounded-3xl bg-[#1d1d1f] px-6 py-6 text-center text-white">
+      <p className="text-xs text-white/70">改善率</p>
+      <div className="mt-4 flex items-center justify-center gap-6">
+        <div>
+          <p className="text-xs text-white/70">朝</p>
+          <p className="mt-1 text-[2rem] font-semibold">{morningScore}</p>
+        </div>
+        <p className="text-white/50">→</p>
+        <div>
+          <p className="text-xs text-white/70">夜</p>
+          <p className="mt-1 text-[2rem] font-semibold">{eveningScore}</p>
+        </div>
+      </div>
+      <p className="mt-4 text-[2rem] font-semibold tracking-tight">
+        {formatImprovementRate(improvementRate)}
+      </p>
+    </div>
+  );
+}
 
 function BookSelector({
   books,
@@ -376,22 +446,38 @@ function HistoryList({ records }: { records: DailyRecord[] }) {
 
             <div className="mt-4 space-y-3">
               <div>
-                <p className="text-xs text-[#86868b]">今日の悩み</p>
+                <p className="text-xs text-[#86868b]">悩み</p>
                 <p className="mt-1 text-[15px] leading-relaxed text-[#1d1d1f]">
                   {record.worry}
                 </p>
               </div>
-              <div>
-                <p className="text-xs text-[#86868b]">今日の行動</p>
-                <p className="mt-1 text-[15px] leading-relaxed text-[#1d1d1f]">
-                  {record.todayAction}
-                </p>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-2xl bg-white px-2 py-3">
+                  <p className="text-[10px] text-[#86868b]">朝</p>
+                  <p className="mt-1 text-lg font-semibold text-[#1d1d1f]">
+                    {record.morningScore ?? "—"}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-white px-2 py-3">
+                  <p className="text-[10px] text-[#86868b]">夜</p>
+                  <p className="mt-1 text-lg font-semibold text-[#1d1d1f]">
+                    {record.eveningScore ?? "—"}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-white px-2 py-3">
+                  <p className="text-[10px] text-[#86868b]">改善率</p>
+                  <p className="mt-1 text-sm font-semibold text-[#1d1d1f]">
+                    {record.improvementRate != null
+                      ? formatImprovementRate(record.improvementRate)
+                      : "—"}
+                  </p>
+                </div>
               </div>
-              {record.reflection ? (
+              {record.learning ? (
                 <div>
-                  <p className="text-xs text-[#86868b]">今日の振り返り</p>
+                  <p className="text-xs text-[#86868b]">学び</p>
                   <p className="mt-1 text-sm leading-relaxed text-[#86868b]">
-                    {record.reflection}
+                    {record.learning}
                   </p>
                 </div>
               ) : null}
@@ -408,8 +494,10 @@ export default function Home() {
   const [customBooks, setCustomBooks] = useState<CustomBook[]>([]);
   const [selectedBookId, setSelectedBookId] = useState("courage");
   const [worry, setWorry] = useState("");
+  const [morningScore, setMorningScore] = useState(8);
+  const [eveningScore, setEveningScore] = useState(5);
   const [result, setResult] = useState<ThoughtResult | null>(null);
-  const [reflection, setReflection] = useState("");
+  const [learning, setLearning] = useState("");
   const [error, setError] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
   const [feedbackMessage, setFeedbackMessage] = useState("");
@@ -442,8 +530,27 @@ export default function Home() {
 
     setError("");
     setResult(generateThoughtResult(selectedBookId, worry, customBooks));
-    setReflection("");
+    setEveningScore(5);
+    setLearning("");
     setSaveMessage("");
+  }
+
+  function handleEdit() {
+    setResult(null);
+    setEveningScore(5);
+    setLearning("");
+    setSaveMessage("");
+    setError("");
+  }
+
+  function handleTryNewWorry() {
+    setResult(null);
+    setWorry("");
+    setMorningScore(8);
+    setEveningScore(5);
+    setLearning("");
+    setSaveMessage("");
+    setError("");
   }
 
   function handleSaveDailyRecord() {
@@ -451,10 +558,12 @@ export default function Home() {
       return;
     }
 
-    if (!reflection.trim()) {
-      setSaveMessage("今日の振り返りを入力してください。");
+    if (!learning.trim()) {
+      setSaveMessage("今日の学びを入力してください。");
       return;
     }
+
+    const improvementRate = calculateImprovementRate(morningScore, eveningScore);
 
     const record = appendDailyRecord({
       date: todayKey,
@@ -466,14 +575,19 @@ export default function Home() {
       myTask: result.myTask,
       othersTask: result.othersTask,
       todayAction: result.todayAction,
-      reflection: reflection.trim(),
+      morningScore,
+      eveningScore,
+      improvementRate,
+      learning: learning.trim(),
     });
 
     setRecords([record, ...records]);
     setSaveMessage("今日の記録を保存しました。");
     setWorry("");
+    setMorningScore(8);
+    setEveningScore(5);
     setResult(null);
-    setReflection("");
+    setLearning("");
   }
 
   function handleBookChange(bookId: string) {
@@ -556,38 +670,51 @@ export default function Home() {
               onChange={handleBookChange}
             />
 
-            <form onSubmit={handleConvert} className="mt-10 space-y-6">
-              <label htmlFor="worry" className="block space-y-3">
-                <span className="text-sm font-medium text-[#1d1d1f]">
-                  今日の悩み
-                </span>
-                <textarea
-                  id="worry"
-                  name="worry"
-                  rows={4}
-                  value={worry}
-                  onChange={(event) => setWorry(event.target.value)}
-                  placeholder="例：上司が自分の仕事を認めてくれない"
-                  className={textareaClassName}
-                />
-              </label>
-
-              {error ? (
-                <p className="text-sm text-[#86868b]" role="alert">
-                  {error}
+            {!result ? (
+              <form onSubmit={handleConvert} className="mt-10 space-y-6">
+                <p className="text-xs font-medium tracking-widest text-[#86868b]">
+                  朝
                 </p>
-              ) : null}
 
-              <button
-                type="submit"
-                className="w-full rounded-full bg-[#0071e3] px-6 py-4 text-[15px] font-medium text-white transition hover:bg-[#0077ed] active:opacity-80"
-              >
-                行動に変換する
-              </button>
-            </form>
+                <label htmlFor="worry" className="block space-y-3">
+                  <span className="text-sm font-medium text-[#1d1d1f]">
+                    今日の悩み
+                  </span>
+                  <textarea
+                    id="worry"
+                    name="worry"
+                    rows={4}
+                    value={worry}
+                    onChange={(event) => setWorry(event.target.value)}
+                    placeholder="例：上司が自分の仕事を認めてくれない"
+                    className={textareaClassName}
+                  />
+                </label>
+
+                <ScoreSlider
+                  id="morning-score"
+                  label="悩みレベル"
+                  value={morningScore}
+                  onChange={setMorningScore}
+                />
+
+                {error ? (
+                  <p className="text-sm text-[#86868b]" role="alert">
+                    {error}
+                  </p>
+                ) : null}
+
+                <button
+                  type="submit"
+                  className="w-full rounded-full bg-[#0071e3] px-6 py-4 text-[15px] font-medium text-white transition hover:bg-[#0077ed] active:opacity-80"
+                >
+                  行動に変換する
+                </button>
+              </form>
+            ) : null}
 
             {result ? (
-              <section aria-live="polite" className="mt-16 space-y-10">
+              <section aria-live="polite" className="mt-10 space-y-10">
                 <div className="rounded-2xl bg-[#f5f5f7] px-4 py-3 text-center">
                   <p className="text-xs text-[#86868b]">思想エンジン</p>
                   <p className="mt-1 text-sm font-medium text-[#1d1d1f]">
@@ -601,6 +728,9 @@ export default function Home() {
                   </p>
                   <p className="mt-3 text-[15px] leading-relaxed text-[#1d1d1f]">
                     {worry.trim()}
+                  </p>
+                  <p className="mt-3 text-xs text-[#86868b]">
+                    朝の悩みレベル：{morningScore}
                   </p>
                 </article>
 
@@ -630,20 +760,53 @@ export default function Home() {
                   ))}
                 </div>
 
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={handleEdit}
+                    className="min-h-[52px] w-full rounded-2xl border border-[#d2d2d7] bg-white px-5 py-4 text-[15px] font-medium text-[#1d1d1f] transition active:bg-[#f5f5f7]"
+                  >
+                    編集する
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleTryNewWorry}
+                    className="min-h-[52px] w-full rounded-2xl bg-[#f5f5f7] px-5 py-4 text-[15px] font-medium text-[#1d1d1f] transition active:bg-[#ebebef]"
+                  >
+                    別の悩みで試す
+                  </button>
+                </div>
+
                 <div className="space-y-4">
-                  <label htmlFor="reflection" className="block space-y-3">
+                  <p className="text-xs font-medium tracking-widest text-[#86868b]">
+                    夜
+                  </p>
+
+                  <ScoreSlider
+                    id="evening-score"
+                    label="現在の悩みレベル"
+                    value={eveningScore}
+                    onChange={setEveningScore}
+                  />
+
+                  <label htmlFor="learning" className="block space-y-3">
                     <span className="text-sm font-medium text-[#1d1d1f]">
-                      今日の振り返り
+                      今日の学び
                     </span>
                     <textarea
-                      id="reflection"
+                      id="learning"
                       rows={4}
-                      value={reflection}
-                      onChange={(event) => setReflection(event.target.value)}
-                      placeholder="例：行動に集中できた。相手の反応より自分の一歩が大事だと感じた"
+                      value={learning}
+                      onChange={(event) => setLearning(event.target.value)}
+                      placeholder="例：相手の反応より、自分の行動に集中できる"
                       className={textareaClassName}
                     />
                   </label>
+
+                  <ImprovementSummary
+                    morningScore={morningScore}
+                    eveningScore={eveningScore}
+                  />
 
                   <button
                     type="button"

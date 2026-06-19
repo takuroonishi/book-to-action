@@ -10,12 +10,31 @@ export type DailyRecord = {
   myTask: string;
   othersTask: string;
   todayAction: string;
-  reflection: string;
+  morningScore: number;
+  eveningScore: number;
+  improvementRate: number;
+  learning: string;
 };
 
 export type DailyRecordInput = Omit<DailyRecord, "id" | "createdAt">;
 
 export const DAILY_RECORDS_KEY = "book-to-action-daily-records";
+
+export function calculateImprovementRate(
+  morningScore: number,
+  eveningScore: number,
+): number {
+  if (morningScore <= 0) {
+    return 0;
+  }
+
+  const rate = ((morningScore - eveningScore) / morningScore) * 100;
+  return Math.max(0, Math.round(rate * 10) / 10);
+}
+
+export function formatImprovementRate(rate: number) {
+  return Number.isInteger(rate) ? `${rate}%` : `${rate.toFixed(1)}%`;
+}
 
 export function loadDailyRecords(): DailyRecord[] {
   if (typeof window === "undefined") {
