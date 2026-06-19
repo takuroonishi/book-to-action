@@ -6,12 +6,8 @@ export type ReaderVoice = {
   bookFramework: string;
   whatChanged: string;
   messageToAuthor: string;
-  initialWorryScore: number;
-  currentWorryScore: number;
-  improvementRate: number;
-  practiceCount: number;
-  insightCount: number;
-  programCompletedAt: string;
+  dailyRecordCount: number;
+  submittedAt: string;
   createdAt: string;
 };
 
@@ -22,7 +18,6 @@ export type ReaderVoiceBookSummary = {
   bookTitle: string;
   bookAuthor: string;
   count: number;
-  averageImprovementRate: number;
 };
 
 export type ReaderVoiceAuthorSummary = {
@@ -81,7 +76,7 @@ export function getReaderVoicesByAuthor(author: string): ReaderVoice[] {
 export function aggregateVoicesByBook(
   voices: ReaderVoice[] = loadReaderVoices(),
 ): ReaderVoiceBookSummary[] {
-  const map = new Map<string, ReaderVoiceBookSummary & { totalRate: number }>();
+  const map = new Map<string, ReaderVoiceBookSummary>();
 
   for (const voice of voices) {
     const existing = map.get(voice.bookId);
@@ -92,20 +87,14 @@ export function aggregateVoicesByBook(
         bookTitle: voice.bookTitle,
         bookAuthor: voice.bookAuthor,
         count: 1,
-        averageImprovementRate: voice.improvementRate,
-        totalRate: voice.improvementRate,
       });
       continue;
     }
 
     existing.count += 1;
-    existing.totalRate += voice.improvementRate;
-    existing.averageImprovementRate = Math.round(
-      existing.totalRate / existing.count,
-    );
   }
 
-  return [...map.values()].map(({ totalRate: _, ...summary }) => summary);
+  return [...map.values()];
 }
 
 export function aggregateVoicesByAuthor(
