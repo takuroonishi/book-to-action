@@ -2,20 +2,18 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getStatusLabel } from "@/lib/feedback-moderation";
+import { ReaderFeedbackAdminCard } from "@/components/admin/ReaderFeedbackAdminCard";
 import { isAdminAuthenticated } from "@/lib/admin/session";
 import {
   computeFeedbackStats,
   fetchReaderFeedback,
   formatAverageRecommendScore,
   formatImprovementDelta,
-  getItemImprovementDelta,
   subscribeReaderFeedback,
   updateFeedbackStatus,
   type FeedbackStatus,
   type ReaderFeedback,
 } from "@/lib/reader-feedback";
-import { resolveAmazonUrlForFeedback } from "@/lib/books";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 
 type ReaderFeedbackDashboardProps = {
@@ -28,22 +26,6 @@ const STATUS_FILTER_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "approved", label: "公開" },
   { value: "rejected", label: "非公開" },
 ];
-
-function StatusBadge({ status }: { status: FeedbackStatus }) {
-  const styles: Record<FeedbackStatus, string> = {
-    pending: "bg-[#fff7e6] text-[#ad6800]",
-    approved: "bg-[#e8f5e9] text-[#2e7d32]",
-    rejected: "bg-[#f5f5f7] text-[#86868b]",
-  };
-
-  return (
-    <span
-      className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${styles[status]}`}
-    >
-      {getStatusLabel(status)}
-    </span>
-  );
-}
 
 export function ReaderFeedbackDashboard({
   bookTitles,
@@ -222,116 +204,16 @@ export function ReaderFeedbackDashboard({
         <p className="text-sm text-[#86868b]">該当する投稿はありません。</p>
       ) : null}
 
-      <div className="space-y-4">
-        {items.map((item) => {
-          const amazonUrl = resolveAmazonUrlForFeedback(item);
-
-          return (
-          <article
+      <div className="space-y-5">
+        {items.map((item) => (
+          <ReaderFeedbackAdminCard
             key={item.id}
-            className="overflow-hidden rounded-3xl bg-white ring-1 ring-[#f2f2f7]"
-          >
-            <div className="bg-[#1d1d1f] px-5 py-6 text-white">
-              <div className="flex items-start justify-between gap-3">
-                <p className="text-[10px] font-medium tracking-[0.2em] text-white/60">
-                  今日の行動
-                </p>
-                <StatusBadge status={item.status} />
-              </div>
-              <p className="mt-3 text-[1.125rem] leading-snug font-semibold">
-                {item.todayAction}
-              </p>
-            </div>
-
-            <div className="space-y-4 px-5 py-5 text-sm">
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="rounded-xl bg-[#f5f5f7] px-2 py-2">
-                  <p className="text-[10px] text-[#86868b]">年代</p>
-                  <p className="mt-1 font-semibold text-[#1d1d1f]">
-                    {item.ageGroup}
-                  </p>
-                </div>
-                <div className="rounded-xl bg-[#f5f5f7] px-2 py-2">
-                  <p className="text-[10px] text-[#86868b]">性別</p>
-                  <p className="mt-1 font-semibold text-[#1d1d1f]">
-                    {item.gender}
-                  </p>
-                </div>
-                <div className="rounded-xl bg-[#f5f5f7] px-2 py-2">
-                  <p className="text-[10px] text-[#86868b]">おすすめ度</p>
-                  <p className="mt-1 font-semibold text-[#1d1d1f]">
-                    {item.recommendScore}
-                  </p>
-                </div>
-              </div>
-
-              <div>
-                <p className="text-xs text-[#86868b]">本</p>
-                <p
-                  className="mt-1 truncate font-medium text-[#1d1d1f]"
-                  title={item.bookTitle}
-                >
-                  {item.bookTitle}
-                </p>
-                <p className="mt-1 text-xs text-[#86868b]">
-                  Amazon：
-                  {amazonUrl ? (
-                    <a
-                      href={amazonUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="ml-1 text-[#0071e3] underline"
-                    >
-                      リンク設定済み
-                    </a>
-                  ) : (
-                    "未設定"
-                  )}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs text-[#86868b]">改善度</p>
-                <p className="mt-1 text-lg font-semibold text-[#1d1d1f]">
-                  {formatImprovementDelta(getItemImprovementDelta(item))}
-                </p>
-              </div>
-
-              {item.messageToAuthor ? (
-                <div>
-                  <p className="text-xs text-[#86868b]">著者へのメッセージ</p>
-                  <p className="mt-2 leading-relaxed text-[#1d1d1f]">
-                    {item.messageToAuthor}
-                  </p>
-                </div>
-              ) : (
-                <p className="text-xs text-[#86868b]">
-                  著者へのメッセージ：未記入
-                </p>
-              )}
-
-              <div className="grid grid-cols-1 gap-2 pt-1">
-                <button
-                  type="button"
-                  disabled={updatingId === item.id || item.status === "approved"}
-                  onClick={() => void handleStatusChange(item.id, "approved")}
-                  className="min-h-[48px] rounded-full bg-[#0071e3] px-4 py-3 text-sm font-medium text-white disabled:opacity-50"
-                >
-                  承認する
-                </button>
-                <button
-                  type="button"
-                  disabled={updatingId === item.id || item.status === "rejected"}
-                  onClick={() => void handleStatusChange(item.id, "rejected")}
-                  className="min-h-[48px] rounded-full border border-[#d2d2d7] bg-white px-4 py-3 text-sm font-medium text-[#1d1d1f] disabled:opacity-50"
-                >
-                  非公開にする
-                </button>
-              </div>
-            </div>
-          </article>
-          );
-        })}
+            item={item}
+            updating={updatingId === item.id}
+            onApprove={() => void handleStatusChange(item.id, "approved")}
+            onReject={() => void handleStatusChange(item.id, "rejected")}
+          />
+        ))}
       </div>
     </section>
   );
