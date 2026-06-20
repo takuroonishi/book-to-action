@@ -3,12 +3,29 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
-  fetchReaderFeedback,
+  fetchApprovedReaderFeedback,
   formatImprovementDelta,
   getItemImprovementDelta,
   type ReaderFeedback,
 } from "@/lib/reader-feedback";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
+
+function AmazonButton({ amazonUrl }: { amazonUrl: string }) {
+  if (!amazonUrl.trim()) {
+    return null;
+  }
+
+  return (
+    <a
+      href={amazonUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex min-h-[52px] items-center justify-center rounded-full bg-[#ff9900] px-5 py-4 text-center text-sm font-medium text-[#1d1d1f] transition active:opacity-80"
+    >
+      この本をAmazonで見る
+    </a>
+  );
+}
 
 function PracticeExampleCard({ item }: { item: ReaderFeedback }) {
   const improvement = getItemImprovementDelta(item);
@@ -25,12 +42,25 @@ function PracticeExampleCard({ item }: { item: ReaderFeedback }) {
       </div>
 
       <div className="space-y-4 px-5 py-5 text-sm leading-relaxed">
-        <p className="text-[#86868b]">
-          {item.ageGroup} · {item.gender}
-        </p>
+        <div>
+          <p className="text-xs text-[#86868b]">改善度</p>
+          <p className="mt-2 text-lg font-semibold text-[#1d1d1f]">
+            {formatImprovementDelta(improvement)}
+          </p>
+          <p className="mt-1 text-xs text-[#86868b]">
+            朝 {item.morningScore} → 夜 {item.eveningScore}
+          </p>
+        </div>
+
+        {item.messageToAuthor ? (
+          <div>
+            <p className="text-xs text-[#86868b]">読者の声</p>
+            <p className="mt-2 text-[#1d1d1f]">{item.messageToAuthor}</p>
+          </div>
+        ) : null}
 
         <div>
-          <p className="text-xs text-[#86868b]">本</p>
+          <p className="text-xs text-[#86868b]">本のタイトル</p>
           <p
             className="mt-1 truncate font-medium text-[#1d1d1f]"
             title={item.bookTitle}
@@ -39,28 +69,7 @@ function PracticeExampleCard({ item }: { item: ReaderFeedback }) {
           </p>
         </div>
 
-        <div className="rounded-2xl bg-[#f5f5f7] px-4 py-4">
-          <p className="text-xs text-[#86868b]">結果</p>
-          <p className="mt-2 text-lg font-semibold text-[#1d1d1f]">
-            改善度 {formatImprovementDelta(improvement)}
-          </p>
-          <p className="mt-2 text-xs text-[#86868b]">
-            朝 {item.morningScore} → 夜 {item.eveningScore}
-          </p>
-          {item.todayReflection ? (
-            <p className="mt-3 text-[#1d1d1f]">{item.todayReflection}</p>
-          ) : null}
-          {!item.todayReflection && item.todayLearning ? (
-            <p className="mt-3 text-[#1d1d1f]">{item.todayLearning}</p>
-          ) : null}
-        </div>
-
-        {item.messageToAuthor ? (
-          <div>
-            <p className="text-xs text-[#86868b]">著者へのメッセージ</p>
-            <p className="mt-2 text-[#1d1d1f]">{item.messageToAuthor}</p>
-          </div>
-        ) : null}
+        <AmazonButton amazonUrl={item.amazonUrl} />
       </div>
     </article>
   );
@@ -85,7 +94,7 @@ export function PracticeExamplesList({
 
       try {
         setError("");
-        const data = await fetchReaderFeedback(bookTitle);
+        const data = await fetchApprovedReaderFeedback(bookTitle);
         setItems(data);
       } catch (loadError) {
         setError(
@@ -103,9 +112,9 @@ export function PracticeExamplesList({
 
   const emptyMessage = useMemo(() => {
     if (bookTitle) {
-      return "この本の実践事例はまだありません。";
+      return "この本の公開済み実践事例はまだありません。";
     }
-    return "実践事例はまだありません。";
+    return "公開済みの実践事例はまだありません。";
   }, [bookTitle]);
 
   if (loading) {
@@ -143,7 +152,7 @@ export function PracticeExamplesPageContent() {
         return;
       }
 
-      const data = await fetchReaderFeedback();
+      const data = await fetchApprovedReaderFeedback();
       const titles = [...new Set(data.map((item) => item.bookTitle))];
       setBookTitles(titles);
     }
@@ -168,7 +177,7 @@ export function PracticeExamplesPageContent() {
             読者の実践事例
           </h1>
           <p className="text-pretty text-[15px] leading-relaxed text-[#86868b]">
-            著者の考え方を実践し、行動につながった事例です。名前は公開しません。
+            運営確認済みの事例だけを公開しています。名前は表示しません。
           </p>
         </header>
 

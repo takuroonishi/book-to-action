@@ -9,6 +9,7 @@ export type CustomBook = {
   title: string;
   author: string;
   framework: string;
+  amazonUrl: string;
   myTaskTemplate: string;
   othersTaskTemplate: string;
   actionTemplate: string;
@@ -25,6 +26,7 @@ export type BookDefinition = {
   title: string;
   author: string;
   framework: string;
+  amazonUrl: string;
   labels: [string, string, string];
   isCustom: boolean;
   myTaskTemplate?: string;
@@ -41,6 +43,7 @@ const BUILT_IN_BOOKS: BookDefinition[] = [
     title: "嫌われる勇気",
     author: "岸見一郎・古賀史健",
     framework: "課題の分離",
+    amazonUrl: "https://www.amazon.co.jp/dp/4478025819",
     labels: ["自分の課題", "相手の課題", "今日できる行動"],
     isCustom: false,
   },
@@ -49,6 +52,7 @@ const BUILT_IN_BOOKS: BookDefinition[] = [
     title: "7つの習慣",
     author: "スティーブン・R・コヴィー",
     framework: "影響の輪",
+    amazonUrl: "https://www.amazon.co.jp/dp/476313309X",
     labels: ["影響の輪（自分）", "影響の輪（外側）", "今日の主体的行動"],
     isCustom: false,
   },
@@ -57,6 +61,7 @@ const BUILT_IN_BOOKS: BookDefinition[] = [
     title: "エッセンシャル思考",
     author: "グレッグ・マキューン",
     framework: "本当に重要か",
+    amazonUrl: "https://www.amazon.co.jp/dp/476313562X",
     labels: ["本当に重要なこと", "捨てていいこと", "今日の本質的な行動"],
     isCustom: false,
   },
@@ -65,6 +70,7 @@ const BUILT_IN_BOOKS: BookDefinition[] = [
     title: "LIFE SHIFT",
     author: "池田吉孝",
     framework: "長期視点",
+    amazonUrl: "https://www.amazon.co.jp/dp/4478108536",
     labels: ["長期視点で見ると", "今は急がなくていいこと", "今日の一歩"],
     isCustom: false,
   },
@@ -303,6 +309,7 @@ function customBookToDefinition(book: CustomBook): BookDefinition {
     title: book.title,
     author: book.author,
     framework: book.framework,
+    amazonUrl: book.amazonUrl ?? "",
     labels: ["自分の課題", "相手の課題", "今日の行動"],
     isCustom: true,
     myTaskTemplate: book.myTaskTemplate,
@@ -323,7 +330,9 @@ export function loadCustomBooks(): CustomBook[] {
     }
 
     const parsed = JSON.parse(stored) as CustomBook[];
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed)
+      ? parsed.map((book) => ({ ...book, amazonUrl: book.amazonUrl ?? "" }))
+      : [];
   } catch {
     return [];
   }
@@ -384,6 +393,10 @@ export function generateThoughtResult(
   }
 
   return generateBuiltInResult("courage", worry);
+}
+
+export function getBookAmazonUrl(book: BookDefinition) {
+  return book.amazonUrl?.trim() ?? "";
 }
 
 export function createCustomBook(

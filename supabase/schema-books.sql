@@ -1,0 +1,11 @@
+-- 将来の書籍マスタ（books テーブル）
+-- 現状は lib/books.ts の組み込み書籍 + localStorage のカスタム書籍で管理。
+
+-- create table if not exists public.books (
+--   id text primary key,
+--   title text not null,
+--   author text not null default '',
+--   framework text not null default '',
+--   amazon_url text not null default '',
+--   created_at timestamptz not null default now()
+-- );

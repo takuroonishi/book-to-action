@@ -3,6 +3,11 @@ import {
   formatImprovementDelta,
   formatImprovementRate,
 } from "@/lib/daily-records";
+import {
+  DEFAULT_FEEDBACK_STATUS,
+  type FeedbackStatus,
+  isFeedbackStatus,
+} from "@/lib/feedback-moderation";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import type {
   ReaderFeedbackInsert,
@@ -24,6 +29,8 @@ export const GENDER_OPTIONS = ["男性", "女性", "その他", "回答しない
 export type AgeGroup = (typeof AGE_GROUP_OPTIONS)[number];
 export type Gender = (typeof GENDER_OPTIONS)[number];
 
+export type { FeedbackStatus };
+
 export type ReaderFeedback = {
   id: string;
   ageGroup: AgeGroup;
@@ -41,18 +48,35 @@ export type ReaderFeedback = {
   todayLearning: string;
   messageToAuthor: string;
   recommendScore: number;
+  status: FeedbackStatus;
+  amazonUrl: string;
   createdAt: string;
 };
 
-export type ReaderFeedbackInput = Omit<ReaderFeedback, "id" | "createdAt">;
+export type ReaderFeedbackInput = Omit<
+  ReaderFeedback,
+  "id" | "createdAt" | "status"
+> & {
+  status?: FeedbackStatus;
+};
+
+export type FetchReaderFeedbackOptions = {
+  bookTitle?: string;
+  status?: FeedbackStatus | FeedbackStatus[];
+};
 
 export type FeedbackStats = {
   totalCount: number;
   averageImprovementDelta: number;
   averageRecommendScore: number;
+  pendingCount: number;
 };
 
 function mapRow(row: ReaderFeedbackRow): ReaderFeedback {
+  const status = isFeedbackStatus(row.status)
+    ? row.status
+    : DEFAULT_FEEDBACK_STATUS;
+
   return {
     id: row.id,
     ageGroup: row.age_group as AgeGroup,
@@ -70,6 +94,8 @@ function mapRow(row: ReaderFeedbackRow): ReaderFeedback {
     todayLearning: row.today_learning ?? row.learning ?? "",
     messageToAuthor: row.message_to_author,
     recommendScore: row.recommend_score ?? 0,
+    status,
+    amazonUrl: row.amazon_url ?? "",
     createdAt: row.created_at,
   };
 }
@@ -91,7 +117,19 @@ function toInsert(input: ReaderFeedbackInput): ReaderFeedbackInsert {
     today_learning: input.todayLearning,
     message_to_author: input.messageToAuthor,
     recommend_score: input.recommendScore,
+    status: input.status ?? DEFAULT_FEEDBACK_STATUS,
+    amazon_url: input.amazonUrl,
   };
+}
+
+function normalizeFetchOptions(
+  options?: FetchReaderFeedbackOptions | string,
+): FetchReaderFeedbackOptions {
+  if (typeof options === "string") {
+    return { bookTitle: options };
+  }
+
+  return options ?? {};
 }
 
 export function computeFeedbackStats(items: ReaderFeedback[]): FeedbackStats {
@@ -100,6 +138,7 @@ export function computeFeedbackStats(items: ReaderFeedback[]): FeedbackStats {
       totalCount: 0,
       averageImprovementDelta: 0,
       averageRecommendScore: 0,
+      pendingCount: 0,
     };
   }
 
@@ -112,11 +151,13 @@ export function computeFeedbackStats(items: ReaderFeedback[]): FeedbackStats {
     ) / totalCount;
   const averageRecommendScore =
     items.reduce((sum, item) => sum + item.recommendScore, 0) / totalCount;
+  const pendingCount = items.filter((item) => item.status === "pending").length;
 
   return {
     totalCount,
     averageImprovementDelta,
     averageRecommendScore,
+    pendingCount,
   };
 }
 
@@ -152,7 +193,7 @@ export async function insertReaderFeedback(
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from("reader_feedback")
-    .insert(toInsert(input))
+    .insert(toInsert({ ...input, status: DEFAULT_FEEDBACK_STATUS }))
     .select("*")
     .single();
 
@@ -164,12 +205,13 @@ export async function insertReaderFeedback(
 }
 
 export async function fetchReaderFeedback(
-  bookTitle?: string,
+  options?: FetchReaderFeedbackOptions | string,
 ): Promise<ReaderFeedback[]> {
   if (!isSupabaseConfigured()) {
     return [];
   }
 
+  const { bookTitle, status } = normalizeFetchOptions(options);
   const supabase = getSupabaseClient();
   let query = supabase
     .from("reader_feedback")
@@ -180,6 +222,14 @@ export async function fetchReaderFeedback(
     query = query.eq("book_title", bookTitle);
   }
 
+  if (status) {
+    if (Array.isArray(status)) {
+      query = query.in("status", status);
+    } else {
+      query = query.eq("status", status);
+    }
+  }
+
   const { data, error } = await query;
 
   if (error) {
@@ -187,6 +237,35 @@ export async function fetchReaderFeedback(
   }
 
   return (data ?? []).map(mapRow);
+}
+
+export async function fetchApprovedReaderFeedback(
+  bookTitle?: string,
+): Promise<ReaderFeedback[]> {
+  return fetchReaderFeedback({ bookTitle, status: "approved" });
+}
+
+export async function updateFeedbackStatus(
+  id: string,
+  status: FeedbackStatus,
+): Promise<ReaderFeedback> {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("reader_feedback")
+    .update({ status })
+    .eq("id", id)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return mapRow(data);
 }
 
 export function subscribeReaderFeedback(

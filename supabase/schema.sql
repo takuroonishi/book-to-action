@@ -18,6 +18,8 @@ create table if not exists public.reader_feedback (
   today_learning text not null default '',
   message_to_author text not null default '',
   recommend_score integer not null default 0 check (recommend_score between 0 and 10),
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
+  amazon_url text not null default '',
   created_at timestamptz not null default now()
 );
 
@@ -42,5 +44,13 @@ create policy "reader_feedback_select_anon"
   for select
   to anon, authenticated
   using (true);
+
+drop policy if exists "reader_feedback_update_anon" on public.reader_feedback;
+create policy "reader_feedback_update_anon"
+  on public.reader_feedback
+  for update
+  to anon, authenticated
+  using (true)
+  with check (true);
 
 alter publication supabase_realtime add table public.reader_feedback;

@@ -15,6 +15,8 @@ export type ReaderFeedbackRow = {
   today_learning: string;
   message_to_author: string;
   recommend_score: number;
+  status: string;
+  amazon_url: string;
   created_at: string;
   learning?: string;
 };
@@ -35,6 +37,12 @@ export type ReaderFeedbackInsert = {
   today_learning: string;
   message_to_author: string;
   recommend_score: number;
+  status?: string;
+  amazon_url?: string;
+};
+
+export type ReaderFeedbackUpdate = {
+  status?: string;
 };
 
 export type Database = {
@@ -43,7 +51,7 @@ export type Database = {
       reader_feedback: {
         Row: ReaderFeedbackRow;
         Insert: ReaderFeedbackInsert;
-        Update: Partial<ReaderFeedbackInsert>;
+        Update: ReaderFeedbackUpdate;
         Relationships: [];
       };
     };

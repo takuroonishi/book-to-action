@@ -6,6 +6,7 @@ import {
   createCustomBook,
   generateThoughtResult,
   getAllBooks,
+  getBookAmazonUrl,
   getBookById,
   loadCustomBooks,
   loadSelectedBookId,
@@ -176,6 +177,7 @@ type AdminFormState = {
   title: string;
   author: string;
   framework: string;
+  amazonUrl: string;
   myTaskTemplate: string;
   othersTaskTemplate: string;
   actionTemplate: string;
@@ -185,6 +187,7 @@ const emptyAdminForm: AdminFormState = {
   title: "",
   author: "",
   framework: "",
+  amazonUrl: "",
   myTaskTemplate:
     "「{worry}」について、{keyword}の反応をコントロールするのではなく、自分が選べる行動に集中すること。",
   othersTaskTemplate:
@@ -226,6 +229,7 @@ function AdminPanel({
       title: form.title.trim(),
       author: form.author.trim(),
       framework: form.framework.trim(),
+      amazonUrl: form.amazonUrl.trim(),
       myTaskTemplate: form.myTaskTemplate.trim(),
       othersTaskTemplate: form.othersTaskTemplate.trim(),
       actionTemplate: form.actionTemplate.trim(),
@@ -256,6 +260,11 @@ function AdminPanel({
             ["title", "書籍名", "例：嫌われる勇気"],
             ["author", "著者名", "例：岸見一郎・古賀史健"],
             ["framework", "考え方", "例：課題の分離"],
+            [
+              "amazonUrl",
+              "Amazon購入リンク",
+              "例：https://www.amazon.co.jp/dp/XXXXXXXXXX",
+            ],
           ] as const
         ).map(([key, label, placeholder]) => (
           <label key={key} className="block space-y-2">
@@ -318,6 +327,9 @@ function AdminPanel({
                   </p>
                   <p className="mt-1 text-xs text-[#86868b]">
                     {book.author} · {book.framework}
+                  </p>
+                  <p className="mt-1 text-xs text-[#86868b]">
+                    Amazon：{book.amazonUrl ? "設定済み" : "未設定"}
                   </p>
                 </div>
                 <button
@@ -586,6 +598,7 @@ export default function Home() {
         todayReflection: todayReflection.trim(),
         todayLearning: todayLearning.trim(),
         messageToAuthor: messageToAuthor.trim(),
+        amazonUrl: getBookAmazonUrl(activeBook),
       });
 
       const record = appendDailyRecord({
@@ -606,7 +619,9 @@ export default function Home() {
 
       setRecords([record, ...records]);
       setSaveError("");
-      setSaveMessage("今日の記録を保存しました。管理者モードに反映されます。");
+      setSaveMessage(
+        "今日の記録を保存しました。運営確認後に実践事例として公開されます。",
+      );
       setWorry("");
       setMorningScore(8);
       setEveningScore(5);
