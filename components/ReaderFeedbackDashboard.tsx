@@ -15,6 +15,7 @@ import {
   type FeedbackStatus,
   type ReaderFeedback,
 } from "@/lib/reader-feedback";
+import { resolveAmazonUrlForFeedback } from "@/lib/books";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 
 type ReaderFeedbackDashboardProps = {
@@ -222,7 +223,10 @@ export function ReaderFeedbackDashboard({
       ) : null}
 
       <div className="space-y-4">
-        {items.map((item) => (
+        {items.map((item) => {
+          const amazonUrl = resolveAmazonUrlForFeedback(item);
+
+          return (
           <article
             key={item.id}
             className="overflow-hidden rounded-3xl bg-white ring-1 ring-[#f2f2f7]"
@@ -271,9 +275,9 @@ export function ReaderFeedbackDashboard({
                 </p>
                 <p className="mt-1 text-xs text-[#86868b]">
                   Amazon：
-                  {item.amazonUrl ? (
+                  {amazonUrl ? (
                     <a
-                      href={item.amazonUrl}
+                      href={amazonUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="ml-1 text-[#0071e3] underline"
@@ -326,7 +330,8 @@ export function ReaderFeedbackDashboard({
               </div>
             </div>
           </article>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

@@ -8,6 +8,7 @@ import {
   getItemImprovementDelta,
   type ReaderFeedback,
 } from "@/lib/reader-feedback";
+import { resolveAmazonUrlForFeedback } from "@/lib/books";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 
 function AmazonButton({ amazonUrl }: { amazonUrl: string }) {
@@ -29,6 +30,7 @@ function AmazonButton({ amazonUrl }: { amazonUrl: string }) {
 
 function PracticeExampleCard({ item }: { item: ReaderFeedback }) {
   const improvement = getItemImprovementDelta(item);
+  const amazonUrl = resolveAmazonUrlForFeedback(item);
 
   return (
     <article className="overflow-hidden rounded-3xl bg-white ring-1 ring-[#f2f2f7]">
@@ -69,7 +71,7 @@ function PracticeExampleCard({ item }: { item: ReaderFeedback }) {
           </p>
         </div>
 
-        <AmazonButton amazonUrl={item.amazonUrl} />
+        <AmazonButton amazonUrl={amazonUrl} />
       </div>
     </article>
   );

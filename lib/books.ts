@@ -43,7 +43,7 @@ const BUILT_IN_BOOKS: BookDefinition[] = [
     title: "嫌われる勇気",
     author: "岸見一郎・古賀史健",
     framework: "課題の分離",
-    amazonUrl: "https://www.amazon.co.jp/dp/4478025819",
+    amazonUrl: "https://www.amazon.co.jp/s?k=嫌われる勇気",
     labels: ["自分の課題", "相手の課題", "今日できる行動"],
     isCustom: false,
   },
@@ -52,7 +52,7 @@ const BUILT_IN_BOOKS: BookDefinition[] = [
     title: "7つの習慣",
     author: "スティーブン・R・コヴィー",
     framework: "影響の輪",
-    amazonUrl: "https://www.amazon.co.jp/dp/476313309X",
+    amazonUrl: "https://www.amazon.co.jp/s?k=7つの習慣",
     labels: ["影響の輪（自分）", "影響の輪（外側）", "今日の主体的行動"],
     isCustom: false,
   },
@@ -61,7 +61,7 @@ const BUILT_IN_BOOKS: BookDefinition[] = [
     title: "エッセンシャル思考",
     author: "グレッグ・マキューン",
     framework: "本当に重要か",
-    amazonUrl: "https://www.amazon.co.jp/dp/476313562X",
+    amazonUrl: "https://www.amazon.co.jp/s?k=エッセンシャル思考",
     labels: ["本当に重要なこと", "捨てていいこと", "今日の本質的な行動"],
     isCustom: false,
   },
@@ -70,7 +70,7 @@ const BUILT_IN_BOOKS: BookDefinition[] = [
     title: "LIFE SHIFT",
     author: "池田吉孝",
     framework: "長期視点",
-    amazonUrl: "https://www.amazon.co.jp/dp/4478108536",
+    amazonUrl: "https://www.amazon.co.jp/s?k=LIFE+SHIFT",
     labels: ["長期視点で見ると", "今は急がなくていいこと", "今日の一歩"],
     isCustom: false,
   },
@@ -395,16 +395,52 @@ export function generateThoughtResult(
   return generateBuiltInResult("courage", worry);
 }
 
+export function buildAmazonSearchUrl(bookTitle: string) {
+  return `https://www.amazon.co.jp/s?k=${encodeURIComponent(bookTitle.trim())}`;
+}
+
+function findBuiltInBook(bookId: string, bookTitle: string) {
+  return BUILT_IN_BOOKS.find(
+    (book) => book.id === bookId || book.title === bookTitle,
+  );
+}
+
+export function getBuiltInBookAmazonUrl(bookId: string, bookTitle: string) {
+  return findBuiltInBook(bookId, bookTitle)?.amazonUrl ?? "";
+}
+
+export function resolveAmazonUrlForFeedback(item: {
+  amazonUrl: string;
+  bookId: string;
+  bookTitle: string;
+}) {
+  const stored = item.amazonUrl.trim();
+  if (stored) {
+    return stored;
+  }
+
+  return getBuiltInBookAmazonUrl(item.bookId, item.bookTitle);
+}
+
 export function getBookAmazonUrl(book: BookDefinition) {
-  return book.amazonUrl?.trim() ?? "";
+  const url = book.amazonUrl?.trim();
+  if (url) {
+    return url;
+  }
+
+  return buildAmazonSearchUrl(book.title);
 }
 
 export function createCustomBook(
   input: Omit<CustomBook, "id">,
 ): CustomBook {
+  const amazonUrl =
+    input.amazonUrl.trim() || buildAmazonSearchUrl(input.title.trim());
+
   return {
     id: `custom-${Date.now()}`,
     ...input,
+    amazonUrl,
   };
 }
 

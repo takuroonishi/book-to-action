@@ -3,6 +3,7 @@ import {
   formatImprovementDelta,
   formatImprovementRate,
 } from "@/lib/daily-records";
+import { resolveAmazonUrlForFeedback } from "@/lib/books";
 import {
   DEFAULT_FEEDBACK_STATUS,
   type FeedbackStatus,
@@ -242,7 +243,11 @@ export async function fetchReaderFeedback(
 export async function fetchApprovedReaderFeedback(
   bookTitle?: string,
 ): Promise<ReaderFeedback[]> {
-  return fetchReaderFeedback({ bookTitle, status: "approved" });
+  const items = await fetchReaderFeedback({ bookTitle, status: "approved" });
+  return items.map((item) => ({
+    ...item,
+    amazonUrl: resolveAmazonUrlForFeedback(item) || item.amazonUrl,
+  }));
 }
 
 export async function updateFeedbackStatus(
