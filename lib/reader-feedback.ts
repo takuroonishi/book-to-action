@@ -119,7 +119,7 @@ function toInsert(input: ReaderFeedbackInput): ReaderFeedbackInsert {
     improvement_rate: input.improvementRate,
     today_reflection: input.todayReflection,
     today_learning: input.todayLearning,
-    message_to_author: input.messageToAuthor,
+    message_to_author: input.messageToAuthor ?? "",
     recommend_score: input.recommendScore,
     status: input.status ?? DEFAULT_FEEDBACK_STATUS,
     amazon_url: input.amazonUrl,

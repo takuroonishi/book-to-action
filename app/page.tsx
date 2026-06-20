@@ -53,7 +53,7 @@ const selectClassName =
   "w-full rounded-2xl bg-[#f5f5f7] px-4 py-3.5 text-[15px] text-[#1d1d1f] transition focus:bg-[#ebebef] focus:outline-none";
 
 const feedbackNoticeText =
-  "投稿いただいたコメント・振り返り・学びは、個人が特定されない形で、サービス改善や著者へのフィードバック、紹介資料等に活用させていただく場合があります。";
+  "投稿いただいた振り返り・学びは、個人が特定されない形で、サービス改善や紹介資料等に活用させていただく場合があります。";
 
 const primaryButtonClassName =
   "min-h-[56px] w-full rounded-full bg-[#0071e3] px-6 py-5 text-base font-medium text-white transition hover:bg-[#0077ed] active:opacity-80";
@@ -414,7 +414,6 @@ export default function Home() {
   const [result, setResult] = useState<ThoughtResult | null>(null);
   const [todayReflection, setTodayReflection] = useState("");
   const [todayLearning, setTodayLearning] = useState("");
-  const [messageToAuthor, setMessageToAuthor] = useState("");
   const [readerProfile, setReaderProfile] = useState<ReaderProfile | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [agreedToFeedbackUse, setAgreedToFeedbackUse] = useState(false);
@@ -478,7 +477,6 @@ export default function Home() {
     setEveningScore(5);
     setTodayReflection("");
     setTodayLearning("");
-    setMessageToAuthor("");
     setAgreedToFeedbackUse(false);
     setSaveMessage("");
     setSaveError("");
@@ -491,7 +489,6 @@ export default function Home() {
     setEveningScore(5);
     setTodayReflection("");
     setTodayLearning("");
-    setMessageToAuthor("");
     setAgreedToFeedbackUse(false);
     setSaveMessage("");
     setSaveError("");
@@ -507,7 +504,6 @@ export default function Home() {
     setEveningScore(5);
     setTodayReflection("");
     setTodayLearning("");
-    setMessageToAuthor("");
     setAgreedToFeedbackUse(false);
     setSaveMessage("");
     setSaveError("");
@@ -526,15 +522,15 @@ export default function Home() {
       return;
     }
 
-    if (!todayReflection.trim()) {
+    if (!todayLearning.trim()) {
       setSaveError("");
-      setSaveMessage("振り返りを入力してください。");
+      setSaveMessage("本から得た学びを入力してください。");
       return;
     }
 
-    if (!todayLearning.trim()) {
+    if (!todayReflection.trim()) {
       setSaveError("");
-      setSaveMessage("学びを入力してください。");
+      setSaveMessage("読者の声を入力してください。");
       return;
     }
 
@@ -575,7 +571,7 @@ export default function Home() {
         improvementRate,
         todayReflection: todayReflection.trim(),
         todayLearning: todayLearning.trim(),
-        messageToAuthor: messageToAuthor.trim(),
+        messageToAuthor: "",
         amazonUrl: getBookAmazonUrl(activeBook),
       });
 
@@ -606,7 +602,6 @@ export default function Home() {
       setResult(null);
       setTodayReflection("");
       setTodayLearning("");
-      setMessageToAuthor("");
       setAgreedToFeedbackUse(false);
     } catch (err) {
       setSaveMessage("");
@@ -855,25 +850,9 @@ export default function Home() {
                     onChange={setEveningScore}
                   />
 
-                  <label htmlFor="today-reflection" className="block space-y-3">
-                    <span className="text-sm font-medium text-[#1d1d1f]">
-                      振り返り
-                    </span>
-                    <textarea
-                      id="today-reflection"
-                      rows={4}
-                      value={todayReflection}
-                      onChange={(event) =>
-                        setTodayReflection(event.target.value)
-                      }
-                      placeholder="例：今日は相手の反応より、自分の行動に集中できた"
-                      className={textareaClassName}
-                    />
-                  </label>
-
                   <label htmlFor="today-learning" className="block space-y-3">
                     <span className="text-sm font-medium text-[#1d1d1f]">
-                      学び
+                      本から得た学び
                     </span>
                     <textarea
                       id="today-learning"
@@ -885,18 +864,18 @@ export default function Home() {
                     />
                   </label>
 
-                  <label htmlFor="message-to-author" className="block space-y-3">
+                  <label htmlFor="today-reflection" className="block space-y-3">
                     <span className="text-sm font-medium text-[#1d1d1f]">
-                      著者に伝えたいこと
+                      読者の声
                     </span>
                     <textarea
-                      id="message-to-author"
+                      id="today-reflection"
                       rows={4}
-                      value={messageToAuthor}
+                      value={todayReflection}
                       onChange={(event) =>
-                        setMessageToAuthor(event.target.value)
+                        setTodayReflection(event.target.value)
                       }
-                      placeholder="この本を読んで実践したことや感謝を自由に記入してください"
+                      placeholder="例：今日は相手の反応より、自分の行動に集中できた"
                       className={textareaClassName}
                     />
                   </label>

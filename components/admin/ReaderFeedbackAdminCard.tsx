@@ -22,18 +22,6 @@ function StatusBadge({ status }: { status: FeedbackStatus }) {
   );
 }
 
-function formatReaderMeta(item: ReaderFeedback) {
-  const profile =
-    item.gender === "回答しない"
-      ? item.ageGroup
-      : `${item.ageGroup}${item.gender}`;
-  const category =
-    item.bookCategory.trim() ||
-    resolveBookCategory(item.bookId, item.bookTitle);
-
-  return `${item.bookTitle}（${category}）　｜　${profile}　｜　おすすめ度 ${item.recommendScore}`;
-}
-
 function ReportField({
   label,
   value,
@@ -80,34 +68,6 @@ function formatResultDisplay(delta: number) {
   };
 }
 
-function ReportResult({
-  item,
-  improvement,
-}: {
-  item: ReaderFeedback;
-  improvement: number;
-}) {
-  const result = formatResultDisplay(improvement);
-
-  return (
-    <div className="space-y-2">
-      <p className="text-xs text-[#86868b]">結果</p>
-      <div
-        className={`rounded-2xl px-4 py-4 ring-1 ${result.container}`}
-      >
-        <p className={`text-[17px] font-semibold sm:text-lg ${result.scoreTone}`}>
-          朝 {item.morningScore} → 夜 {item.eveningScore}
-        </p>
-        <p
-          className={`mt-2 text-[15px] font-semibold ${result.headlineTone}`}
-        >
-          {result.headline}
-        </p>
-      </div>
-    </div>
-  );
-}
-
 function AdminPublicationState({ status }: { status: FeedbackStatus }) {
   if (status === "approved") {
     return <p className="text-sm font-medium text-[#2e7d32]">公開済み</p>;
@@ -134,7 +94,11 @@ export function ReaderFeedbackAdminCard({
   onReject,
 }: ReaderFeedbackAdminCardProps) {
   const improvement = getItemImprovementDelta(item);
+  const result = formatResultDisplay(improvement);
   const hasAmazonUrl = item.amazonUrl.trim().length > 0;
+  const category =
+    item.bookCategory.trim() ||
+    resolveBookCategory(item.bookId, item.bookTitle);
 
   return (
     <article className="overflow-hidden rounded-3xl bg-white ring-1 ring-[#f2f2f7]">
@@ -142,22 +106,56 @@ export function ReaderFeedbackAdminCard({
         <h2 className="text-lg font-semibold tracking-tight text-[#1d1d1f]">
           読者の変化
         </h2>
-        <p className="mt-2 text-xs leading-relaxed text-[#86868b]">
-          {formatReaderMeta(item)}
-        </p>
       </header>
 
       <div className="space-y-7 px-5 py-6 sm:px-6">
+        <dl className="grid grid-cols-3 gap-3">
+          <div className="rounded-2xl bg-[#f5f5f7] px-3 py-3 text-center">
+            <dt className="text-[11px] text-[#86868b]">年代</dt>
+            <dd className="mt-1 text-[15px] font-medium text-[#1d1d1f]">
+              {item.ageGroup}
+            </dd>
+          </div>
+          <div className="rounded-2xl bg-[#f5f5f7] px-3 py-3 text-center">
+            <dt className="text-[11px] text-[#86868b]">性別</dt>
+            <dd className="mt-1 text-[15px] font-medium text-[#1d1d1f]">
+              {item.gender}
+            </dd>
+          </div>
+          <div className="rounded-2xl bg-[#f5f5f7] px-3 py-3 text-center">
+            <dt className="text-[11px] text-[#86868b]">おすすめ度</dt>
+            <dd className="mt-1 text-[15px] font-medium text-[#1d1d1f]">
+              {item.recommendScore}
+            </dd>
+          </div>
+        </dl>
+
+        <ReportField label="本" value={item.bookTitle} />
+        <ReportField label="カテゴリ" value={category} />
         <ReportField label="悩み" value={item.worry} />
-        <ReportField label="本から得た学び" value={item.todayLearning} />
+        <ReportField label="学び" value={item.todayLearning} />
         <ReportField label="今日の行動" value={item.todayAction} />
-        <ReportResult item={item} improvement={improvement} />
-        <ReportField label="著者へのメッセージ" value={item.messageToAuthor} />
+
+        <div className="space-y-2">
+          <p className="text-xs text-[#86868b]">改善度</p>
+          <div className={`rounded-2xl px-4 py-4 ring-1 ${result.container}`}>
+            <p className={`text-[17px] font-semibold sm:text-lg ${result.scoreTone}`}>
+              朝 {item.morningScore} → 夜 {item.eveningScore}
+            </p>
+            <p
+              className={`mt-2 text-[15px] font-semibold ${result.headlineTone}`}
+            >
+              {result.headline}
+            </p>
+          </div>
+        </div>
+
+        <ReportField label="読者の声" value={item.todayReflection} />
       </div>
 
       <footer className="space-y-4 border-t border-[#f2f2f7] bg-[#fafafa] px-5 py-5 sm:px-6">
         <div className="flex flex-wrap items-center gap-3">
-          <p className="text-xs font-semibold text-[#86868b]">管理操作</p>
+          <p className="text-xs font-semibold text-[#86868b]">ステータス</p>
           <StatusBadge status={item.status} />
           <AdminPublicationState status={item.status} />
         </div>

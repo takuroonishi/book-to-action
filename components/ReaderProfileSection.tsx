@@ -58,7 +58,7 @@ export function ReaderProfileSection({
           <p className="text-sm font-medium text-[#1d1d1f]">読者情報</p>
           {!profile ? (
             <p className="mt-1 text-xs leading-relaxed text-[#86868b]">
-              初回のみ入力。2回目以降は自動で反映されます。
+              初回のみ入力。年代・性別・おすすめ度は2回目以降も自動反映されます。
             </p>
           ) : null}
         </div>
@@ -120,7 +120,7 @@ export function ReaderProfileSection({
                 htmlFor="profile-recommend-score"
                 className="text-sm font-medium text-[#1d1d1f]"
               >
-                この本を友人に勧めたいですか？
+                同じ悩みを持つ人に、この本を勧めたいですか？
               </label>
               <span className="text-2xl font-semibold text-[#1d1d1f]">
                 {recommendScore}
