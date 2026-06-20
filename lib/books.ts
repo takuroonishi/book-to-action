@@ -1,3 +1,5 @@
+import { getConcreteTodayAction } from "@/lib/concrete-actions";
+
 export type ThoughtResult = {
   myTask: string;
   othersTask: string;
@@ -232,7 +234,8 @@ const BOSS_OVERRIDES: Partial<Record<BuiltInBookId, ThoughtResult>> = {
     myTask:
       "上司の評価をコントロールするのではなく、自分の仕事への向き合い方と伝え方を選ぶこと。",
     othersTask: "上司がどう評価し、どう反応するかは上司自身の課題です。",
-    todayAction: "上司に確認したいことを1文にまとめ、必要なら短く伝える。",
+    todayAction:
+      "自分が今日完了させる作業を1つ決め、終わったら上司に報告文を1文で送る。",
   },
   sevenHabits: {
     myTask:
@@ -344,12 +347,24 @@ function generateFrameworkResult(
   book: BookDefinition,
   worry: string,
 ): ThoughtResult {
-  const concern = worry.trim();
+  const category = detectCategory(worry.trim());
 
   return {
-    myTask: `「${concern}」について、${book.framework}の視点で、自分が選べる考え方と行動に集中すること。`,
-    othersTask: `結果や相手の反応すべてをコントロールする必要はない。${book.framework}の視点で手放す。`,
-    todayAction: `「${concern}」に関して、${book.framework}に沿った今日の一歩を1つ実行する。`,
+    myTask: `${book.framework}の視点で、${CATEGORY_LABELS[category]}の悩みに対して自分が選べる考え方に集中すること。`,
+    othersTask:
+      "結果や相手の反応すべてをコントロールする必要はない。手放す。",
+    todayAction: getConcreteTodayAction(book.id as BuiltInBookId, worry),
+  };
+}
+
+function withConcreteAction(
+  result: ThoughtResult,
+  bookId: BuiltInBookId,
+  worry: string,
+): ThoughtResult {
+  return {
+    ...result,
+    todayAction: getConcreteTodayAction(bookId, worry),
   };
 }
 
@@ -386,12 +401,12 @@ function generateBuiltInResult(
   const relationshipKeyword = findKeyword(concern, RELATIONSHIP_KEYWORDS);
 
   if (relationshipKeyword === "上司" && BOSS_OVERRIDES[bookId]) {
-    return BOSS_OVERRIDES[bookId];
+    return withConcreteAction(BOSS_OVERRIDES[bookId], bookId, worry);
   }
 
   const engine = THOUGHT_ENGINE[bookId];
   if (engine) {
-    return engine[category];
+    return withConcreteAction(engine[category], bookId, worry);
   }
 
   return generateFrameworkResult(book, worry);
@@ -493,10 +508,13 @@ export function generateThoughtResult(
   const book = getBookById(bookId, customBooks);
 
   if (book.isCustom) {
+    const todayAction = applyTemplate(book.actionTemplate ?? "", worry);
     return {
       myTask: applyTemplate(book.myTaskTemplate ?? "", worry),
       othersTask: applyTemplate(book.othersTaskTemplate ?? "", worry),
-      todayAction: applyTemplate(book.actionTemplate ?? "", worry),
+      todayAction: isAbstractAction(todayAction)
+        ? getConcreteTodayAction("elephant", worry)
+        : todayAction,
     };
   }
 
@@ -505,6 +523,14 @@ export function generateThoughtResult(
   }
 
   return generateBuiltInResult("courage", worry);
+}
+
+function isAbstractAction(action: string) {
+  const trimmed = action.trim();
+  return (
+    /(実行する|意識する|考える|取り組む)$/.test(trimmed) ||
+    /に沿った今日の一歩|一歩を1つ実行|行動を1つ実行/.test(trimmed)
+  );
 }
 
 export function buildAmazonSearchUrl(bookTitle: string) {

@@ -158,7 +158,7 @@ const emptyAdminForm: AdminFormState = {
   othersTaskTemplate:
     "{keyword}がどう感じ、どう判断するかは{keyword}自身の課題です。",
   actionTemplate:
-    "「{worry}」に関して、今日自分にできる一歩を1つ実行する。",
+    "今日30分以内に終わる行動を1つ決め、タイマーを25分セットして始める。",
 };
 
 function AdminPanel({
