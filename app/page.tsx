@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   createCustomBook,
@@ -254,7 +255,7 @@ function AdminPanel({
           [
             ["title", "書籍名", "例：嫌われる勇気"],
             ["author", "著者名", "例：岸見一郎・古賀史健"],
-            ["framework", "思想", "例：課題の分離"],
+            ["framework", "考え方", "例：課題の分離"],
           ] as const
         ).map(([key, label, placeholder]) => (
           <label key={key} className="block space-y-2">
@@ -670,10 +671,10 @@ export default function Home() {
             BOOK TO ACTION
           </p>
           <h1 className="text-balance text-[1.625rem] leading-snug font-semibold tracking-tight text-[#1d1d1f] sm:text-[1.75rem]">
-            思想が、行動に変わる。
+            思考が、行動に変わる。
           </h1>
           <p className="text-pretty text-[15px] leading-relaxed text-[#86868b]">
-            著者の思想が読者の行動に変わった瞬間を記録するアプリ。
+            著者の思考を読者の行動に変えるアプリ。
           </p>
         </header>
 
@@ -948,7 +949,13 @@ export default function Home() {
             <HistoryList records={records} />
             </div>
 
-            <footer className="mt-20 text-center">
+            <footer className="mt-20 space-y-3 text-center">
+              <Link
+                href="/examples"
+                className="inline-block text-sm text-[#0071e3] underline"
+              >
+                読者の実践事例を見る
+              </Link>
               <p className="text-sm leading-loose text-[#86868b]">
                 本を読むだけで終わらない。行動で変える。
               </p>

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { isAdminAuthenticated } from "@/lib/admin/session";
 import {
@@ -87,8 +88,14 @@ export function ReaderFeedbackDashboard({
       <div>
         <p className="text-sm font-medium text-[#1d1d1f]">読者の行動変容</p>
         <p className="mt-1 text-xs leading-relaxed text-[#86868b]">
-          著者の思想が、読者の行動に変わった瞬間を記録します。
+          著者の思考を読者の行動に変える記録です。
         </p>
+        <Link
+          href="/examples"
+          className="mt-2 inline-block text-sm text-[#0071e3] underline"
+        >
+          読者の実践事例（公開ページ）を見る
+        </Link>
       </div>
 
       <div className="space-y-2 rounded-2xl bg-white px-5 py-4 ring-1 ring-[#f2f2f7]">
