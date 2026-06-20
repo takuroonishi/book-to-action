@@ -11,13 +11,15 @@ import {
   getBookById,
   getBuiltInBooks,
   loadCustomBooks,
-  loadSelectedBookId,
   saveCustomBooks,
-  saveSelectedBookId,
   TEMPLATE_HINT,
   type CustomBook,
   type ThoughtResult,
 } from "@/lib/books";
+import {
+  MANUAL_BOOK_SELECTION_REASON,
+  recommendBook,
+} from "@/lib/book-matcher";
 import {
   appendDailyRecord,
   calculateImprovementDelta,
@@ -404,6 +406,8 @@ export default function Home() {
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [customBooks, setCustomBooks] = useState<CustomBook[]>([]);
   const [selectedBookId, setSelectedBookId] = useState("courage");
+  const [bookSelectionReason, setBookSelectionReason] = useState("");
+  const [showBookPicker, setShowBookPicker] = useState(false);
   const [worry, setWorry] = useState("");
   const [morningScore, setMorningScore] = useState(8);
   const [eveningScore, setEveningScore] = useState(5);
@@ -439,7 +443,6 @@ export default function Home() {
     const loadedProfile = loadReaderProfile();
     setCustomBooks(loadedCustomBooks);
     setRecords(loadDailyRecords());
-    setSelectedBookId(loadSelectedBookId(loadedCustomBooks));
     setReaderProfile(loadedProfile);
     setIsEditingProfile(!loadedProfile);
   }, [todayKey]);
@@ -467,7 +470,11 @@ export default function Home() {
     }
 
     setError("");
-    setResult(generateThoughtResult(selectedBookId, worry, customBooks));
+    const recommendation = recommendBook(worry);
+    setSelectedBookId(recommendation.bookId);
+    setBookSelectionReason(recommendation.reason);
+    setShowBookPicker(false);
+    setResult(generateThoughtResult(recommendation.bookId, worry, customBooks));
     setEveningScore(5);
     setTodayReflection("");
     setTodayLearning("");
@@ -479,6 +486,8 @@ export default function Home() {
 
   function handleEdit() {
     setResult(null);
+    setBookSelectionReason("");
+    setShowBookPicker(false);
     setEveningScore(5);
     setTodayReflection("");
     setTodayLearning("");
@@ -491,6 +500,8 @@ export default function Home() {
 
   function handleTryNewWorry() {
     setResult(null);
+    setBookSelectionReason("");
+    setShowBookPicker(false);
     setWorry("");
     setMorningScore(8);
     setEveningScore(5);
@@ -556,6 +567,7 @@ export default function Home() {
         bookTitle: activeBook.title,
         bookAuthor: activeBook.author,
         bookFramework: activeBook.framework,
+        bookCategory: activeBook.category,
         worry: worry.trim(),
         morningScore,
         todayAction: result.todayAction,
@@ -610,9 +622,10 @@ export default function Home() {
 
   function handleBookChange(bookId: string) {
     setSelectedBookId(bookId);
-    saveSelectedBookId(bookId);
+    setBookSelectionReason(MANUAL_BOOK_SELECTION_REASON);
+    setShowBookPicker(false);
 
-    if (worry.trim()) {
+    if (worry.trim() && result) {
       setResult(generateThoughtResult(bookId, worry, customBooks));
     }
   }
@@ -631,7 +644,6 @@ export default function Home() {
     if (selectedBookId === bookId) {
       const fallbackId = "courage";
       setSelectedBookId(fallbackId);
-      saveSelectedBookId(fallbackId);
     }
   }
 
@@ -692,14 +704,6 @@ export default function Home() {
               }`}
             >
             {!result ? (
-              <BookSelector
-                books={builtInBooks}
-                selectedBookId={selectedBookId}
-                onChange={handleBookChange}
-              />
-            ) : null}
-
-            {!result ? (
               <form onSubmit={handleConvert} className="space-y-6">
                 <p className="text-xs font-medium tracking-widest text-[#86868b]">
                   朝
@@ -715,7 +719,7 @@ export default function Home() {
                     rows={4}
                     value={worry}
                     onChange={(event) => setWorry(event.target.value)}
-                    placeholder="例：上司が自分の仕事を認めてくれない"
+                    placeholder="例：アウトプットをどうすればいいかわからない"
                     className={textareaClassName}
                   />
                 </label>
@@ -737,22 +741,42 @@ export default function Home() {
                   type="submit"
                   className={primaryButtonClassName}
                 >
-                  行動に変換する
+                  本を選んで行動に変える
                 </button>
               </form>
             ) : null}
 
             {result ? (
               <section aria-live="polite" className="mt-8 space-y-8">
-                <p
-                  className="truncate text-center text-xs text-[#86868b]"
-                  title={`${activeBook.title} · ${activeBook.framework}`}
-                >
-                  参考：
-                  {activeBook.title}
-                  <span className="mx-1.5 text-[#d2d2d7]">·</span>
-                  {activeBook.framework}
-                </p>
+                <article className="rounded-3xl bg-[#f5f5f7] px-5 py-5">
+                  <p className="text-xs font-medium text-[#86868b]">
+                    あなたの悩みに合う本
+                  </p>
+                  <p className="mt-2 text-lg font-semibold text-[#1d1d1f]">
+                    {activeBook.title}
+                  </p>
+                  <p className="mt-4 text-xs font-medium text-[#86868b]">
+                    選んだ理由
+                  </p>
+                  <p className="mt-1 text-sm leading-relaxed text-[#1d1d1f]">
+                    {bookSelectionReason}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowBookPicker((current) => !current)}
+                    className="mt-4 text-sm text-[#0071e3] underline"
+                  >
+                    別の本を選ぶ
+                  </button>
+                </article>
+
+                {showBookPicker ? (
+                  <BookSelector
+                    books={builtInBooks}
+                    selectedBookId={selectedBookId}
+                    onChange={handleBookChange}
+                  />
+                ) : null}
 
                 <article className="rounded-[2rem] bg-[#1d1d1f] px-5 py-10 text-center text-white shadow-sm sm:px-6">
                   <p className="text-[11px] font-medium tracking-[0.25em] text-white/60">

@@ -108,7 +108,9 @@ function AmazonButton({ amazonUrl }: { amazonUrl: string }) {
 export function PracticeExampleCard({ item }: { item: ReaderFeedback }) {
   const improvement = getItemImprovementDelta(item);
   const amazonUrl = resolveAmazonUrlForFeedback(item);
-  const category = resolveBookCategory(item.bookId, item.bookTitle);
+  const category =
+    item.bookCategory.trim() ||
+    resolveBookCategory(item.bookId, item.bookTitle);
 
   return (
     <article className="overflow-hidden rounded-3xl bg-white ring-1 ring-[#f2f2f7]">

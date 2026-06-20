@@ -40,6 +40,7 @@ export type ReaderFeedback = {
   bookTitle: string;
   bookAuthor: string;
   bookFramework: string;
+  bookCategory: string;
   worry: string;
   morningScore: number;
   todayAction: string;
@@ -86,6 +87,7 @@ function mapRow(row: ReaderFeedbackRow): ReaderFeedback {
     bookTitle: row.book_title,
     bookAuthor: row.book_author,
     bookFramework: row.book_framework,
+    bookCategory: row.book_category ?? "",
     worry: row.worry,
     morningScore: row.morning_score,
     todayAction: row.today_action,
@@ -109,6 +111,7 @@ function toInsert(input: ReaderFeedbackInput): ReaderFeedbackInsert {
     book_title: input.bookTitle,
     book_author: input.bookAuthor,
     book_framework: input.bookFramework,
+    book_category: input.bookCategory,
     worry: input.worry,
     morning_score: input.morningScore,
     today_action: input.todayAction,

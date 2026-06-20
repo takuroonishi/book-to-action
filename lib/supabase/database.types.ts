@@ -6,6 +6,7 @@ export type ReaderFeedbackRow = {
   book_title: string;
   book_author: string;
   book_framework: string;
+  book_category: string;
   worry: string;
   morning_score: number;
   today_action: string;
@@ -28,6 +29,7 @@ export type ReaderFeedbackInsert = {
   book_title: string;
   book_author: string;
   book_framework: string;
+  book_category: string;
   worry: string;
   morning_score: number;
   today_action: string;

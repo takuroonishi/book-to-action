@@ -1,3 +1,4 @@
+import { resolveBookCategory } from "@/lib/books";
 import { getStatusLabel } from "@/lib/feedback-moderation";
 import {
   getItemImprovementDelta,
@@ -26,8 +27,11 @@ function formatReaderMeta(item: ReaderFeedback) {
     item.gender === "回答しない"
       ? item.ageGroup
       : `${item.ageGroup}${item.gender}`;
+  const category =
+    item.bookCategory.trim() ||
+    resolveBookCategory(item.bookId, item.bookTitle);
 
-  return `${item.bookTitle}　｜　${profile}　｜　おすすめ度 ${item.recommendScore}`;
+  return `${item.bookTitle}（${category}）　｜　${profile}　｜　おすすめ度 ${item.recommendScore}`;
 }
 
 function ReportField({

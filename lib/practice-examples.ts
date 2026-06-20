@@ -18,7 +18,8 @@ export function matchesPracticeExampleFilters(
 
   if (
     filters.category &&
-    resolveBookCategory(item.bookId, item.bookTitle) !== filters.category
+    (item.bookCategory.trim() ||
+      resolveBookCategory(item.bookId, item.bookTitle)) !== filters.category
   ) {
     return false;
   }
@@ -43,7 +44,11 @@ export function extractBookTitles(items: ReaderFeedback[]) {
 export function extractCategories(items: ReaderFeedback[]) {
   return [
     ...new Set(
-      items.map((item) => resolveBookCategory(item.bookId, item.bookTitle)),
+      items.map(
+        (item) =>
+          item.bookCategory.trim() ||
+          resolveBookCategory(item.bookId, item.bookTitle),
+      ),
     ),
   ].sort((a, b) => a.localeCompare(b, "ja"));
 }
