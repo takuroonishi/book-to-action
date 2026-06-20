@@ -7,6 +7,7 @@ import { PracticeExamplesList } from "@/components/practice-examples/PracticeExa
 import { fetchApprovedReaderFeedback } from "@/lib/reader-feedback";
 import {
   extractBookTitles,
+  extractCategories,
   type PracticeExampleFilters,
 } from "@/lib/practice-examples";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
@@ -14,6 +15,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/client";
 export function PracticeExamplesPageContent() {
   const [filters, setFilters] = useState<PracticeExampleFilters>({});
   const [bookTitles, setBookTitles] = useState<string[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => {
     async function loadBooks() {
@@ -23,6 +25,7 @@ export function PracticeExamplesPageContent() {
 
       const data = await fetchApprovedReaderFeedback();
       setBookTitles(extractBookTitles(data));
+      setCategories(extractCategories(data));
     }
 
     void loadBooks();
@@ -52,6 +55,7 @@ export function PracticeExamplesPageContent() {
         <PracticeExampleFilterBar
           filters={filters}
           bookTitles={bookTitles}
+          categories={categories}
           onChange={setFilters}
         />
 

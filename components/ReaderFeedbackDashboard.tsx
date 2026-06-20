@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { BookComparisonStats } from "@/components/admin/BookComparisonStats";
 import { ReaderFeedbackAdminCard } from "@/components/admin/ReaderFeedbackAdminCard";
 import { isAdminAuthenticated } from "@/lib/admin/session";
 import {
+  computeBookFeedbackStats,
   computeFeedbackStats,
   fetchReaderFeedback,
   formatAverageRecommendScore,
@@ -30,22 +32,43 @@ const STATUS_FILTER_OPTIONS: Array<{ value: string; label: string }> = [
 export function ReaderFeedbackDashboard({
   bookTitles,
 }: ReaderFeedbackDashboardProps) {
-  const [items, setItems] = useState<ReaderFeedback[]>([]);
+  const [allItems, setAllItems] = useState<ReaderFeedback[]>([]);
   const [selectedBook, setSelectedBook] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const stats = useMemo(() => computeFeedbackStats(items), [items]);
+  const stats = useMemo(() => computeFeedbackStats(allItems), [allItems]);
+  const bookStats = useMemo(
+    () => computeBookFeedbackStats(allItems),
+    [allItems],
+  );
+
+  const filteredItems = useMemo(() => {
+    return allItems.filter((item) => {
+      if (selectedBook !== "all" && item.bookTitle !== selectedBook) {
+        return false;
+      }
+
+      if (
+        selectedStatus !== "all" &&
+        item.status !== (selectedStatus as FeedbackStatus)
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [allItems, selectedBook, selectedStatus]);
 
   const filterOptions = useMemo(() => {
     const titles = new Set(bookTitles);
-    for (const item of items) {
+    for (const item of allItems) {
       titles.add(item.bookTitle);
     }
     return ["all", ...Array.from(titles)];
-  }, [bookTitles, items]);
+  }, [bookTitles, allItems]);
 
   const loadFeedback = useCallback(async () => {
     if (!isSupabaseConfigured()) {
@@ -62,14 +85,8 @@ export function ReaderFeedbackDashboard({
 
     try {
       setError("");
-      const data = await fetchReaderFeedback({
-        bookTitle: selectedBook === "all" ? undefined : selectedBook,
-        status:
-          selectedStatus === "all"
-            ? undefined
-            : (selectedStatus as FeedbackStatus),
-      });
-      setItems(data);
+      const data = await fetchReaderFeedback();
+      setAllItems(data);
     } catch (loadError) {
       setError(
         loadError instanceof Error
@@ -79,7 +96,7 @@ export function ReaderFeedbackDashboard({
     } finally {
       setLoading(false);
     }
-  }, [selectedBook, selectedStatus]);
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -154,6 +171,8 @@ export function ReaderFeedbackDashboard({
         </p>
       </div>
 
+      <BookComparisonStats stats={bookStats} />
+
       <div className="grid grid-cols-1 gap-3">
         <label className="block space-y-2">
           <span className="text-xs font-medium text-[#86868b]">
@@ -200,12 +219,12 @@ export function ReaderFeedbackDashboard({
         </p>
       ) : null}
 
-      {!loading && !error && items.length === 0 ? (
+      {!loading && !error && filteredItems.length === 0 ? (
         <p className="text-sm text-[#86868b]">該当する投稿はありません。</p>
       ) : null}
 
       <div className="space-y-5">
-        {items.map((item) => (
+        {filteredItems.map((item) => (
           <ReaderFeedbackAdminCard
             key={item.id}
             item={item}

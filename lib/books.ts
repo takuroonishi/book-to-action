@@ -15,17 +15,48 @@ export type CustomBook = {
   actionTemplate: string;
 };
 
+export type BookCategory =
+  | "人間関係"
+  | "習慣・自己管理"
+  | "仕事"
+  | "人生設計"
+  | "挑戦"
+  | "学習"
+  | "思考法"
+  | "変化対応"
+  | "行動習慣";
+
+export const BOOK_CATEGORIES: BookCategory[] = [
+  "人間関係",
+  "習慣・自己管理",
+  "仕事",
+  "人生設計",
+  "挑戦",
+  "学習",
+  "思考法",
+  "変化対応",
+  "行動習慣",
+];
+
 export type BuiltInBookId =
   | "courage"
   | "sevenHabits"
   | "essential"
-  | "lifeShift";
+  | "dieWithZero"
+  | "grit"
+  | "output"
+  | "influence"
+  | "factfulness"
+  | "cheese"
+  | "elephant";
 
 export type BookDefinition = {
   id: string;
   title: string;
   author: string;
+  category: BookCategory;
   framework: string;
+  description: string;
   amazonUrl: string;
   labels: [string, string, string];
   isCustom: boolean;
@@ -42,7 +73,9 @@ const BUILT_IN_BOOKS: BookDefinition[] = [
     id: "courage",
     title: "嫌われる勇気",
     author: "岸見一郎・古賀史健",
+    category: "人間関係",
     framework: "課題の分離",
+    description: "他者の評価と自分の課題を分け、人間関係の悩みに向き合う。",
     amazonUrl: "https://www.amazon.co.jp/s?k=嫌われる勇気",
     labels: ["自分の課題", "相手の課題", "今日できる行動"],
     isCustom: false,
@@ -51,7 +84,9 @@ const BUILT_IN_BOOKS: BookDefinition[] = [
     id: "sevenHabits",
     title: "7つの習慣",
     author: "スティーブン・R・コヴィー",
+    category: "習慣・自己管理",
     framework: "影響の輪",
+    description: "自分に影響できる行動に集中し、習慣で人生を整える。",
     amazonUrl: "https://www.amazon.co.jp/s?k=7つの習慣",
     labels: ["影響の輪（自分）", "影響の輪（外側）", "今日の主体的行動"],
     isCustom: false,
@@ -60,18 +95,88 @@ const BUILT_IN_BOOKS: BookDefinition[] = [
     id: "essential",
     title: "エッセンシャル思考",
     author: "グレッグ・マキューン",
-    framework: "本当に重要か",
+    category: "仕事",
+    framework: "選択と集中",
+    description: "本当に重要なことだけを選び、仕事と人生を絞り込む。",
     amazonUrl: "https://www.amazon.co.jp/s?k=エッセンシャル思考",
     labels: ["本当に重要なこと", "捨てていいこと", "今日の本質的な行動"],
     isCustom: false,
   },
   {
-    id: "lifeShift",
-    title: "LIFE SHIFT",
-    author: "池田吉孝",
-    framework: "長期視点",
-    amazonUrl: "https://www.amazon.co.jp/s?k=LIFE+SHIFT",
-    labels: ["長期視点で見ると", "今は急がなくていいこと", "今日の一歩"],
+    id: "dieWithZero",
+    title: "DIE WITH ZERO",
+    author: "ビル・パーキンス",
+    category: "人生設計",
+    framework: "人生の時間配分",
+    description: "人生の時間をどう使うか考え、後悔のない選択をする。",
+    amazonUrl: "https://www.amazon.co.jp/s?k=DIE+WITH+ZERO",
+    labels: ["人生の時間", "今は急がないこと", "今日の一歩"],
+    isCustom: false,
+  },
+  {
+    id: "grit",
+    title: "GRIT やり抜く力",
+    author: "アンジェラ・ダックワース",
+    category: "挑戦",
+    framework: "継続と情熱",
+    description: "長期目標に向けて継続する力を培い、挫折を乗り越える。",
+    amazonUrl: "https://www.amazon.co.jp/s?k=GRIT+やり抜く力",
+    labels: ["継続する自分", "手放す不安", "今日の一歩"],
+    isCustom: false,
+  },
+  {
+    id: "output",
+    title: "アウトプット大全",
+    author: "ボー・プバティー",
+    category: "学習",
+    framework: "学びを行動に変える",
+    description: "学んだことをすぐ行動に移し、成長を加速する。",
+    amazonUrl: "https://www.amazon.co.jp/s?k=アウトプット大全",
+    labels: ["学んだこと", "保留していいこと", "今日のアウトプット"],
+    isCustom: false,
+  },
+  {
+    id: "influence",
+    title: "人を動かす",
+    author: "デール・カーネギー",
+    category: "人間関係",
+    framework: "相手を理解する",
+    description: "相手の立場を理解し、関係性を前向きに変える。",
+    amazonUrl: "https://www.amazon.co.jp/s?k=人を動かす",
+    labels: ["相手の視点", "自分の反応", "今日の関わり方"],
+    isCustom: false,
+  },
+  {
+    id: "factfulness",
+    title: "FACTFULNESS",
+    author: "ハンス・ロスリング",
+    category: "思考法",
+    framework: "思い込みを外す",
+    description: "データと事実で見積もり、思い込みから自由になる。",
+    amazonUrl: "https://www.amazon.co.jp/s?k=FACTFULNESS",
+    labels: ["事実で見る", "思い込み", "今日の判断"],
+    isCustom: false,
+  },
+  {
+    id: "cheese",
+    title: "チーズはどこへ消えた？",
+    author: "スペンサー・ジョンソン",
+    category: "変化対応",
+    framework: "変化を受け入れる",
+    description: "変化を恐れず受け入れ、新しい行動を始める。",
+    amazonUrl: "https://www.amazon.co.jp/s?k=チーズはどこへ消えた",
+    labels: ["変化の兆し", "古い考え", "今日の新しい行動"],
+    isCustom: false,
+  },
+  {
+    id: "elephant",
+    title: "夢をかなえるゾウ",
+    author: "水野敬也",
+    category: "行動習慣",
+    framework: "小さな行動を積み重ねる",
+    description: "小さな一歩を毎日積み重ね、行動習慣を育てる。",
+    amazonUrl: "https://www.amazon.co.jp/s?k=夢をかなえるゾウ",
+    labels: ["小さな一歩", "先延ばし", "今日の行動"],
     isCustom: false,
   },
 ];
@@ -122,7 +227,7 @@ function detectCategory(concern: string): WorryCategory {
   return "other";
 }
 
-const BOSS_OVERRIDES: Record<BuiltInBookId, ThoughtResult> = {
+const BOSS_OVERRIDES: Partial<Record<BuiltInBookId, ThoughtResult>> = {
   courage: {
     myTask:
       "上司の評価をコントロールするのではなく、自分の仕事への向き合い方と伝え方を選ぶこと。",
@@ -143,18 +248,10 @@ const BOSS_OVERRIDES: Record<BuiltInBookId, ThoughtResult> = {
       "上司の一時的な反応への過剰なこだわりは本質的ではない。手放す。",
     todayAction: "本当に重要なタスク1つに絞り、それ以外は今日はしない。",
   },
-  lifeShift: {
-    myTask:
-      "5年後のキャリアから見て、今の評価がどれだけ意味を持つか考える。",
-    othersTask:
-      "短期的な評価に一喜一憂することは、長期視点では優先度が低い。",
-    todayAction: "長期キャリアにつながるスキルや行動を1つ、今日進める。",
-  },
 };
 
-const THOUGHT_ENGINE: Record<
-  BuiltInBookId,
-  Record<WorryCategory, ThoughtResult>
+const THOUGHT_ENGINE: Partial<
+  Record<BuiltInBookId, Record<WorryCategory, ThoughtResult>>
 > = {
   courage: {
     relationship: {
@@ -241,36 +338,20 @@ const THOUGHT_ENGINE: Record<
       todayAction: "最重要の行動1つに絞り、30分集中する。",
     },
   },
-  lifeShift: {
-    relationship: {
-      myTask:
-        "100年人生の視点で、今の関係性にどう向き合うかを選ぶこと。",
-      othersTask:
-        "一時的な摩擦や評価に過剰反応する必要は、長期視点ではない。",
-      todayAction: "長期的な関係のために今日できる行動を1つ進める。",
-    },
-    work: {
-      myTask:
-        "今の仕事悩みが、5年後・10年後のキャリアにどうつながるかを考えること。",
-      othersTask:
-        "短期的な評価や環境の変化に、長期視点ほどの不安を持たなくていい。",
-      todayAction: "将来のキャリアにつながる行動を1つ、今日進める。",
-    },
-    money: {
-      myTask:
-        "今のお金の不安を、人生100年の資産形成の視点で見直すこと。",
-      othersTask:
-        "短期的な収入の上下だけで、人生全体の設計を揺らさなくていい。",
-      todayAction: "長期の資産形成につながる行動を1つ実行する。",
-    },
-    other: {
-      myTask:
-        "今の悩みが、人生全体の中でどれだけ重要かを長期視点で見極めること。",
-      othersTask: "今すぐ解決しなくても、人生全体では大きくない問題もある。",
-      todayAction: "未来の自分のために今日できる一歩を1つ進める。",
-    },
-  },
 };
+
+function generateFrameworkResult(
+  book: BookDefinition,
+  worry: string,
+): ThoughtResult {
+  const concern = worry.trim();
+
+  return {
+    myTask: `「${concern}」について、${book.framework}の視点で、自分が選べる考え方と行動に集中すること。`,
+    othersTask: `結果や相手の反応すべてをコントロールする必要はない。${book.framework}の視点で手放す。`,
+    todayAction: `「${concern}」に関して、${book.framework}に沿った今日の一歩を1つ実行する。`,
+  };
+}
 
 function isBuiltInBookId(id: string): id is BuiltInBookId {
   return BUILT_IN_BOOKS.some((book) => book.id === id);
@@ -291,16 +372,29 @@ function applyTemplate(template: string, worry: string): string {
     .replace(/\{keyword\}/g, keyword);
 }
 
-function generateBuiltInResult(bookId: BuiltInBookId, worry: string): ThoughtResult {
+function generateBuiltInResult(
+  bookId: BuiltInBookId,
+  worry: string,
+): ThoughtResult {
+  const book = BUILT_IN_BOOKS.find((entry) => entry.id === bookId);
+  if (!book) {
+    return generateFrameworkResult(BUILT_IN_BOOKS[0], worry);
+  }
+
   const concern = worry.trim();
   const category = detectCategory(concern);
   const relationshipKeyword = findKeyword(concern, RELATIONSHIP_KEYWORDS);
 
-  if (relationshipKeyword === "上司") {
+  if (relationshipKeyword === "上司" && BOSS_OVERRIDES[bookId]) {
     return BOSS_OVERRIDES[bookId];
   }
 
-  return THOUGHT_ENGINE[bookId][category];
+  const engine = THOUGHT_ENGINE[bookId];
+  if (engine) {
+    return engine[category];
+  }
+
+  return generateFrameworkResult(book, worry);
 }
 
 function customBookToDefinition(book: CustomBook): BookDefinition {
@@ -308,7 +402,9 @@ function customBookToDefinition(book: CustomBook): BookDefinition {
     id: book.id,
     title: book.title,
     author: book.author,
+    category: "行動習慣",
     framework: book.framework,
+    description: "",
     amazonUrl: book.amazonUrl ?? "",
     labels: ["自分の課題", "相手の課題", "今日の行動"],
     isCustom: true,
@@ -316,6 +412,18 @@ function customBookToDefinition(book: CustomBook): BookDefinition {
     othersTaskTemplate: book.othersTaskTemplate,
     actionTemplate: book.actionTemplate,
   };
+}
+
+export function getBuiltInBooks(): BookDefinition[] {
+  return BUILT_IN_BOOKS;
+}
+
+export function resolveBookCategory(bookId: string, bookTitle: string) {
+  const book = BUILT_IN_BOOKS.find(
+    (entry) => entry.id === bookId || entry.title === bookTitle,
+  );
+
+  return book?.category ?? "行動習慣";
 }
 
 export function loadCustomBooks(): CustomBook[] {
@@ -361,8 +469,12 @@ export function loadSelectedBookId(customBooks: CustomBook[] = []): string {
     return "courage";
   }
 
+  const availableBooks = getBuiltInBooks();
   const stored = localStorage.getItem(SELECTED_BOOK_KEY);
-  if (stored && getAllBooks(customBooks).some((book) => book.id === stored)) {
+  if (
+    stored &&
+    availableBooks.some((book) => book.id === stored)
+  ) {
     return stored;
   }
 

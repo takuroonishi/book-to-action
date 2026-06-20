@@ -56,8 +56,11 @@ export function PracticeExamplesList({ filters }: PracticeExamplesListProps) {
     if (filters.bookTitle) {
       return "この本の公開済み実践事例はまだありません。";
     }
+    if (filters.category) {
+      return "このカテゴリの公開済み実践事例はまだありません。";
+    }
     return "公開済みの実践事例はまだありません。";
-  }, [filters.bookTitle]);
+  }, [filters.bookTitle, filters.category]);
 
   if (loading) {
     return <p className="text-sm text-[#86868b]">読み込み中...</p>;

@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { BookSelector } from "@/components/BookSelector";
 import {
   createCustomBook,
   generateThoughtResult,
   getAllBooks,
   getBookAmazonUrl,
   getBookById,
+  getBuiltInBooks,
   loadCustomBooks,
   loadSelectedBookId,
   saveCustomBooks,
@@ -132,43 +134,6 @@ function ImprovementSummary({
       <p className="mt-4 text-[2rem] font-semibold tracking-tight">
         {formatImprovementDelta(improvementDelta)}
       </p>
-    </div>
-  );
-}
-
-function BookSelector({
-  books,
-  selectedBookId,
-  onChange,
-}: {
-  books: ReturnType<typeof getAllBooks>;
-  selectedBookId: string;
-  onChange: (bookId: string) => void;
-}) {
-  const selectedBook = books.find((book) => book.id === selectedBookId);
-
-  return (
-    <div className="rounded-2xl bg-[#f5f5f7] px-4 py-3">
-      <label htmlFor="book-select" className="block space-y-2">
-        <span className="text-xs text-[#86868b]">参考にする本</span>
-        <select
-          id="book-select"
-          value={selectedBookId}
-          onChange={(event) => onChange(event.target.value)}
-          className={selectClassName}
-        >
-          {books.map((book) => (
-            <option key={book.id} value={book.id}>
-              {book.title}
-            </option>
-          ))}
-        </select>
-        {selectedBook ? (
-          <p className="text-xs text-[#86868b]">
-            {selectedBook.author} · {selectedBook.framework}
-          </p>
-        ) : null}
-      </label>
     </div>
   );
 }
@@ -457,6 +422,7 @@ export default function Home() {
 
   const todayKey = getTodayKey();
   const allBooks = useMemo(() => getAllBooks(customBooks), [customBooks]);
+  const builtInBooks = useMemo(() => getBuiltInBooks(), []);
   const allBookTitles = useMemo(
     () => allBooks.map((book) => book.title),
     [allBooks],
@@ -727,7 +693,7 @@ export default function Home() {
             >
             {!result ? (
               <BookSelector
-                books={allBooks}
+                books={builtInBooks}
                 selectedBookId={selectedBookId}
                 onChange={handleBookChange}
               />

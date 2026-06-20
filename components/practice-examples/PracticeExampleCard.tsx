@@ -3,7 +3,7 @@ import {
   getItemImprovementDelta,
   type ReaderFeedback,
 } from "@/lib/reader-feedback";
-import { resolveAmazonUrlForFeedback } from "@/lib/books";
+import { resolveAmazonUrlForFeedback, resolveBookCategory } from "@/lib/books";
 import type { ReactNode } from "react";
 
 function PracticeExampleSection({
@@ -108,6 +108,7 @@ function AmazonButton({ amazonUrl }: { amazonUrl: string }) {
 export function PracticeExampleCard({ item }: { item: ReaderFeedback }) {
   const improvement = getItemImprovementDelta(item);
   const amazonUrl = resolveAmazonUrlForFeedback(item);
+  const category = resolveBookCategory(item.bookId, item.bookTitle);
 
   return (
     <article className="overflow-hidden rounded-3xl bg-white ring-1 ring-[#f2f2f7]">
@@ -142,6 +143,7 @@ export function PracticeExampleCard({ item }: { item: ReaderFeedback }) {
           <p className="truncate font-medium" title={item.bookTitle}>
             {item.bookTitle}
           </p>
+          <p className="mt-1 text-xs text-[#0071e3]">{category}</p>
         </PracticeExampleSection>
 
         <AmazonButton amazonUrl={amazonUrl} />

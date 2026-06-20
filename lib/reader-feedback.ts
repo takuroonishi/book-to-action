@@ -3,7 +3,7 @@ import {
   formatImprovementDelta,
   formatImprovementRate,
 } from "@/lib/daily-records";
-import { resolveAmazonUrlForFeedback } from "@/lib/books";
+import { getBuiltInBooks, resolveAmazonUrlForFeedback } from "@/lib/books";
 import {
   DEFAULT_FEEDBACK_STATUS,
   type FeedbackStatus,
@@ -168,6 +168,55 @@ export function getItemImprovementDelta(item: ReaderFeedback) {
 
 export function formatAverageRecommendScore(score: number) {
   return score.toFixed(1);
+}
+
+export type BookFeedbackStats = {
+  bookId: string;
+  bookTitle: string;
+  category: string;
+  postCount: number;
+  averageImprovementDelta: number;
+  averageRecommendScore: number;
+};
+
+export function computeBookFeedbackStats(
+  items: ReaderFeedback[],
+): BookFeedbackStats[] {
+  return getBuiltInBooks().map((book) => {
+    const bookItems = items.filter(
+      (item) => item.bookId === book.id || item.bookTitle === book.title,
+    );
+
+    if (bookItems.length === 0) {
+      return {
+        bookId: book.id,
+        bookTitle: book.title,
+        category: book.category,
+        postCount: 0,
+        averageImprovementDelta: 0,
+        averageRecommendScore: 0,
+      };
+    }
+
+    const postCount = bookItems.length;
+    const averageImprovementDelta =
+      bookItems.reduce(
+        (sum, item) => sum + getItemImprovementDelta(item),
+        0,
+      ) / postCount;
+    const averageRecommendScore =
+      bookItems.reduce((sum, item) => sum + item.recommendScore, 0) /
+      postCount;
+
+    return {
+      bookId: book.id,
+      bookTitle: book.title,
+      category: book.category,
+      postCount,
+      averageImprovementDelta,
+      averageRecommendScore,
+    };
+  });
 }
 
 export function formatRecommendScore(score: number) {
