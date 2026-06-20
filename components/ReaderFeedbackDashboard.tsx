@@ -119,9 +119,9 @@ export function ReaderFeedbackDashboard({
   return (
     <section className="space-y-5">
       <div>
-        <p className="text-sm font-medium text-[#1d1d1f]">コメント管理</p>
+        <p className="text-sm font-medium text-[#1d1d1f]">読者の変化レポート</p>
         <p className="mt-1 text-xs leading-relaxed text-[#86868b]">
-          公開前に投稿を確認し、承認した事例だけを一般公開します。
+          悩みから学び、行動、結果までの変化を確認し、承認した事例だけを一般公開します。
         </p>
         <Link
           href="/examples"
