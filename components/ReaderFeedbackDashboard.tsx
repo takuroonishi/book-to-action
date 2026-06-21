@@ -2,11 +2,19 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BookComparisonStats } from "@/components/admin/BookComparisonStats";
+import { AuthorInsightsPanel } from "@/components/admin/AuthorInsightsPanel";
+import { PlatformKGIPanel } from "@/components/admin/PlatformKGIPanel";
 import { ReaderFeedbackAdminCard } from "@/components/admin/ReaderFeedbackAdminCard";
+import { BookEffectivenessRanking } from "@/components/insights/BookEffectivenessRanking";
 import { isAdminAuthenticated } from "@/lib/admin/session";
 import {
-  computeBookFeedbackStats,
+  computeAuthorStats,
+  computePlatformKGI,
+  computeTopActions,
+  getBookEffectivenessRanking,
+  getWeeklyWorryRanking,
+} from "@/lib/platform-analytics";
+import {
   computeFeedbackStats,
   fetchReaderFeedback,
   formatAverageRecommendScore,
@@ -40,10 +48,14 @@ export function ReaderFeedbackDashboard({
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const stats = useMemo(() => computeFeedbackStats(allItems), [allItems]);
-  const bookStats = useMemo(
-    () => computeBookFeedbackStats(allItems),
+  const bookRanking = useMemo(
+    () => getBookEffectivenessRanking(allItems),
     [allItems],
   );
+  const platformKGI = useMemo(() => computePlatformKGI(allItems), [allItems]);
+  const authorStats = useMemo(() => computeAuthorStats(allItems), [allItems]);
+  const worryRanking = useMemo(() => getWeeklyWorryRanking(allItems), [allItems]);
+  const topActions = useMemo(() => computeTopActions(allItems), [allItems]);
 
   const filteredItems = useMemo(() => {
     return allItems.filter((item) => {
@@ -148,6 +160,8 @@ export function ReaderFeedbackDashboard({
         </Link>
       </div>
 
+      <PlatformKGIPanel kgi={platformKGI} />
+
       <div className="space-y-2 rounded-2xl bg-white px-5 py-4 ring-1 ring-[#f2f2f7]">
         <p className="text-sm text-[#1d1d1f]">
           総投稿数：
@@ -171,7 +185,13 @@ export function ReaderFeedbackDashboard({
         </p>
       </div>
 
-      <BookComparisonStats stats={bookStats} />
+      <BookEffectivenessRanking stats={bookRanking} />
+
+      <AuthorInsightsPanel
+        authors={authorStats}
+        worryRanking={worryRanking}
+        topActions={topActions}
+      />
 
       <div className="grid grid-cols-1 gap-3">
         <label className="block space-y-2">

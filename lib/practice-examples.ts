@@ -1,11 +1,19 @@
 import { resolveBookCategory } from "@/lib/books";
-import type { AgeGroup, Gender, ReaderFeedback } from "@/lib/reader-feedback";
+import {
+  getItemImprovementDelta,
+  AGE_GROUP_OPTIONS,
+  GENDER_OPTIONS,
+  type AgeGroup,
+  type Gender,
+  type ReaderFeedback,
+} from "@/lib/reader-feedback";
 
 export type PracticeExampleFilters = {
   bookTitle?: string;
   category?: string;
   ageGroup?: AgeGroup;
   gender?: Gender;
+  minImprovement?: number;
 };
 
 export function matchesPracticeExampleFilters(
@@ -32,6 +40,13 @@ export function matchesPracticeExampleFilters(
     return false;
   }
 
+  if (
+    typeof filters.minImprovement === "number" &&
+    getItemImprovementDelta(item) < filters.minImprovement
+  ) {
+    return false;
+  }
+
   return true;
 }
 
@@ -52,3 +67,5 @@ export function extractCategories(items: ReaderFeedback[]) {
     ),
   ].sort((a, b) => a.localeCompare(b, "ja"));
 }
+
+export { AGE_GROUP_OPTIONS, GENDER_OPTIONS };

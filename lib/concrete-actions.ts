@@ -288,32 +288,51 @@ const BOOK_DEFAULT_ACTIONS: Record<BuiltInBookId, string> = {
     "5分で終わる行動を1つ決め、今すぐ5分タイマーをセットして始める。",
 };
 
+const BANNED_ACTION_PATTERNS = [
+  /意識する$/,
+  /考える$/,
+  /頑張る$/,
+  /実践する$/,
+  /取り組む$/,
+  /実行する$/,
+];
+
+function finalizeMeasurableAction(action: string, fallback: string) {
+  const trimmed = action.trim();
+  if (!trimmed) {
+    return fallback;
+  }
+
+  if (BANNED_ACTION_PATTERNS.some((pattern) => pattern.test(trimmed))) {
+    return fallback;
+  }
+
+  return trimmed;
+}
+
 export function getConcreteTodayAction(
   bookId: BuiltInBookId,
   worry: string,
 ): string {
   const pattern = detectWorryPattern(worry);
   const category = detectWorryCategory(worry);
+  const fallback = BOOK_DEFAULT_ACTIONS[bookId];
+
+  let action = fallback;
 
   if (bookId === "output") {
     const outputActions = PATTERN_ACTIONS.output;
-    return (
+    action =
       outputActions?.[pattern] ??
       outputActions?.output_learning ??
       outputActions?.general ??
-      BOOK_DEFAULT_ACTIONS.output
-    );
+      fallback;
+  } else {
+    action =
+      PATTERN_ACTIONS[bookId]?.[pattern] ??
+      CATEGORY_ACTIONS[bookId]?.[category] ??
+      fallback;
   }
 
-  const patternAction = PATTERN_ACTIONS[bookId]?.[pattern];
-  if (patternAction) {
-    return patternAction;
-  }
-
-  const categoryAction = CATEGORY_ACTIONS[bookId]?.[category];
-  if (categoryAction) {
-    return categoryAction;
-  }
-
-  return BOOK_DEFAULT_ACTIONS[bookId];
+  return finalizeMeasurableAction(action, fallback);
 }

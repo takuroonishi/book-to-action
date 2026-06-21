@@ -36,6 +36,7 @@ import {
   type ReaderProfile,
 } from "@/lib/reader-profile";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { ReaderChangeReportCard } from "@/components/change-report/ReaderChangeReportCard";
 import { ReaderFeedbackDashboard } from "@/components/ReaderFeedbackDashboard";
 import { ReaderProfileSection } from "@/components/ReaderProfileSection";
 
@@ -581,6 +582,7 @@ export default function Home() {
         bookTitle: activeBook.title,
         bookAuthor: activeBook.author,
         bookFramework: activeBook.framework,
+        bookCategory: activeBook.category,
         worry: worry.trim(),
         myTask: result.myTask,
         othersTask: result.othersTask,
@@ -658,11 +660,16 @@ export default function Home() {
           <p className="text-xs font-medium tracking-[0.35em] text-[#86868b]">
             BOOK TO ACTION
           </p>
+          <p className="rounded-2xl bg-[#1d1d1f] px-4 py-4 text-[15px] leading-relaxed text-white">
+            本を読んで終わりではなく、
+            <br />
+            今日の行動を決める。
+          </p>
           <h1 className="text-balance text-[1.625rem] leading-snug font-semibold tracking-tight text-[#1d1d1f] sm:text-[1.75rem]">
             思考が、行動に変わる。
           </h1>
           <p className="text-pretty text-[15px] leading-relaxed text-[#86868b]">
-            著者の思考を読者の行動に変えるアプリ。
+            本による行動変容データベース
           </p>
         </header>
 
@@ -688,9 +695,12 @@ export default function Home() {
                 STEP 1 · 読者情報を保存すると、毎日の記録を始められます。
               </p>
             ) : (
-              <p className="mt-6 text-sm text-[#86868b]">
-                STEP 2 · 毎日の悩みと行動を記録
-              </p>
+              <>
+                <ReaderChangeReportCard records={records} />
+                <p className="mt-6 text-sm text-[#86868b]">
+                  今日の悩みは何ですか？
+                </p>
+              </>
             )}
 
             <div
@@ -705,8 +715,8 @@ export default function Home() {
                 </p>
 
                 <label htmlFor="worry" className="block space-y-3">
-                  <span className="text-sm font-medium text-[#1d1d1f]">
-                    今日の悩み
+                  <span className="text-base font-semibold text-[#1d1d1f]">
+                    今日の悩みは何ですか？
                   </span>
                   <textarea
                     id="worry"
@@ -934,14 +944,19 @@ export default function Home() {
             </div>
 
             <footer className="mt-20 space-y-3 text-center">
-              <Link
-                href="/examples"
-                className="inline-block text-sm text-[#0071e3] underline"
-              >
-                読者の実践事例を見る
-              </Link>
+              <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm">
+                <Link href="/examples" className="text-[#0071e3] underline">
+                  実践事例
+                </Link>
+                <Link href="/insights" className="text-[#0071e3] underline">
+                  インサイト
+                </Link>
+                <Link href="/authors" className="text-[#0071e3] underline">
+                  著者
+                </Link>
+              </div>
               <p className="text-sm leading-loose text-[#86868b]">
-                本を読むだけで終わらない。行動で変える。
+                本を読んで終わりではなく、今日の行動を決める。
               </p>
             </footer>
           </>

@@ -6,6 +6,7 @@ export type DailyRecord = {
   bookTitle: string;
   bookAuthor: string;
   bookFramework: string;
+  bookCategory?: string;
   worry: string;
   myTask: string;
   othersTask: string;
